@@ -23,13 +23,12 @@ module SwiftGem
       ["ext_main.c.erb",         "ext/%{module_path}/%{module_path}.c"],
       ["ext_main.h.erb",         "ext/%{module_path}/%{module_path}.h"],
       ["ext_extconf.rb.erb",     "ext/%{module_path}/extconf.rb"],
-      ["exe_cli.erb",            "exe/%{exe_name}"],
       ["examples_cli.swift.erb", "examples/%{module_path}.swift"],
       ["test_helper.rb.erb",     "test/test_helper.rb"],
       ["test_sample.rb.erb",     "test/%{module_path}/sample_test.rb"]
     ].freeze
 
-    EXECUTABLE_TARGETS = ["exe/%{exe_name}"].freeze
+    EXECUTABLE_TARGETS = [].freeze
 
     attr_reader :gem_name
 

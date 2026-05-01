@@ -41,7 +41,7 @@ consumer gem (例: rb-vision-ocrmac)
 | `SwiftGem::Mkmf` | `create_swift_makefile` で `swift build --package-path <dir>` を実行し、`-Wl,-rpath,<dir>/.build/release` `-L<dir>/.build/release` `-l<package>` を $LDFLAGS に注入してから標準 mkmf の `create_makefile` に委譲 |
 | `SwiftGem::Generator` | gem 名から命名 transform (`module_name` / `module_path` / `exe_name`)、ERB テンプレを `dest_dir` に展開、`exe/<name>` に chmod +x |
 | `SwiftGem::Generator::Context` | ERB 内で `<%= module_name %>` 等を method として呼べるための binding holder |
-| `lib/swift_gem/templates/` | 静的: `gitignore` `bundle_config` `LICENSE.txt`<br>ERB: `gemspec` `Gemfile` `Rakefile` `README.md` `lib_main.rb` `lib_version.rb` `ext_Package.swift` `ext_Sources.swift` `ext_Bridge.swift` `ext_main.c` `ext_main.h` `ext_extconf.rb` `exe_cli` `examples_cli.swift` `test_helper.rb` `test_sample.rb` |
+| `lib/swift_gem/templates/` | 静的: `gitignore` `bundle_config` `LICENSE.txt`<br>ERB: `gemspec` `Gemfile` `Rakefile` `README.md` `lib_main.rb` `lib_version.rb` `ext_Package.swift` `ext_Sources.swift` `ext_Bridge.swift` `ext_main.c` `ext_main.h` `ext_extconf.rb` `examples_cli.swift` `test_helper.rb` `test_sample.rb`<br>**Ruby CLI (exe/) は scaffold 出力に含めない**: Apple framework binding はライブラリ志向 (irb / 他 Ruby から直叩き) が主、CLI が要る gem は scaffold 後に手で `exe/` を追加。`exe_name` transform 自体は public で残してる (将来 CLI を欲しい consumer の参考用) |
 | `exe/swift_gem` | 素 ARGV CLI。`new` サブコマンドのみ。non-empty な `--dest` は refuse |
 
 ## 命名 transform 規則

@@ -38,9 +38,10 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.h"))
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
 
-      # CLIs
-      assert_file_exist(File.join(gem_dir, "exe/foo-mac"))
+      # pure Swift sample (no Ruby CLI by default; see CLAUDE.md)
       assert_file_exist(File.join(gem_dir, "examples/foo_mac.swift"))
+      assert_false(File.exist?(File.join(gem_dir, "exe")),
+                   "generator should not scaffold a Ruby CLI under exe/")
 
       # tests
       assert_file_exist(File.join(gem_dir, "test/test_helper.rb"))
@@ -54,10 +55,6 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_match(/SwiftGem::Mkmf\.create_swift_makefile/, extconf)
       assert_match(/package:\s*["']FooMac["']/, extconf)
       assert_match(/source_dir:\s*__dir__/, extconf)
-
-      # exe is executable
-      assert(File.executable?(File.join(gem_dir, "exe/foo-mac")),
-             "exe/foo-mac should be executable")
     end
   end
 
