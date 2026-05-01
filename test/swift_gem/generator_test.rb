@@ -22,6 +22,9 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_file_exist(File.join(gem_dir, "README.md"))
       assert_file_exist(File.join(gem_dir, ".gitignore"))
       assert_file_exist(File.join(gem_dir, "LICENSE.txt"))
+      assert_file_exist(File.join(gem_dir, ".bundle/config"))
+      assert_match(/BUNDLE_PATH:\s*"vendor\/bundle"/,
+                   File.read(File.join(gem_dir, ".bundle/config")))
 
       # lib
       assert_file_exist(File.join(gem_dir, "lib/foo_mac.rb"))
