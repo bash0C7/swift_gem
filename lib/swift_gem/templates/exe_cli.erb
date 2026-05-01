@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "<%= module_path %>"
+
+if ARGV.empty?
+  warn "usage: <%= exe_name %> <input>"
+  exit 1
+end
+
+print <%= module_name %>.perform(ARGV[0])

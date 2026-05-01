@@ -6,37 +6,41 @@ require "fileutils"
 require "swift_gem/generator"
 
 class SwiftGemGeneratorTest < Test::Unit::TestCase
+  def assert_file_exist(path)
+    assert(File.exist?(path), "expected file to exist: #{path}")
+  end
+
   test "generates a complete swift gem skeleton from rb-foo-mac" do
     Dir.mktmpdir do |tmp|
       gem_dir = File.join(tmp, "rb-foo-mac")
       SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
 
       # core gem files
-      assert_path_exists(File.join(gem_dir, "rb-foo-mac.gemspec"))
-      assert_path_exists(File.join(gem_dir, "Gemfile"))
-      assert_path_exists(File.join(gem_dir, "Rakefile"))
-      assert_path_exists(File.join(gem_dir, "README.md"))
-      assert_path_exists(File.join(gem_dir, ".gitignore"))
-      assert_path_exists(File.join(gem_dir, "LICENSE.txt"))
+      assert_file_exist(File.join(gem_dir, "rb-foo-mac.gemspec"))
+      assert_file_exist(File.join(gem_dir, "Gemfile"))
+      assert_file_exist(File.join(gem_dir, "Rakefile"))
+      assert_file_exist(File.join(gem_dir, "README.md"))
+      assert_file_exist(File.join(gem_dir, ".gitignore"))
+      assert_file_exist(File.join(gem_dir, "LICENSE.txt"))
 
       # lib
-      assert_path_exists(File.join(gem_dir, "lib/foo_mac.rb"))
-      assert_path_exists(File.join(gem_dir, "lib/foo_mac/version.rb"))
+      assert_file_exist(File.join(gem_dir, "lib/foo_mac.rb"))
+      assert_file_exist(File.join(gem_dir, "lib/foo_mac/version.rb"))
 
       # ext
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/Package.swift"))
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMac.swift"))
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/foo_mac.h"))
-      assert_path_exists(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Package.swift"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMac.swift"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.h"))
+      assert_file_exist(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
 
       # CLIs
-      assert_path_exists(File.join(gem_dir, "exe/foo-mac"))
-      assert_path_exists(File.join(gem_dir, "examples/foo_mac.swift"))
+      assert_file_exist(File.join(gem_dir, "exe/foo-mac"))
+      assert_file_exist(File.join(gem_dir, "examples/foo_mac.swift"))
 
       # tests
-      assert_path_exists(File.join(gem_dir, "test/test_helper.rb"))
+      assert_file_exist(File.join(gem_dir, "test/test_helper.rb"))
 
       # naming transforms inside generated files
       assert_match(/module FooMac/, File.read(File.join(gem_dir, "lib/foo_mac.rb")))

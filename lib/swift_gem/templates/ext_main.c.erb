@@ -1,0 +1,18 @@
+#include <ruby.h>
+#include "<%= module_path %>.h"
+
+static VALUE rb_<%= module_path %>_perform(VALUE self, VALUE input) {
+    const char *c_input = StringValueCStr(input);
+    char *result = <%= c_symbol_prefix %>perform(c_input);
+    if (result == NULL) {
+        return rb_utf8_str_new_cstr("");
+    }
+    VALUE rb_result = rb_utf8_str_new_cstr(result);
+    <%= c_symbol_prefix %>free(result);
+    return rb_result;
+}
+
+void Init_<%= module_path %>(void) {
+    VALUE module = rb_define_module("<%= module_name %>");
+    rb_define_singleton_method(module, "perform", rb_<%= module_path %>_perform, 1);
+}

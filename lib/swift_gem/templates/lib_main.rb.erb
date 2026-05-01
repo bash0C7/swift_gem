@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+require_relative "<%= module_path %>/version"
+require_relative "<%= module_path %>/<%= module_path %>"
+
+module <%= module_name %>
+  class Error < StandardError; end
+end

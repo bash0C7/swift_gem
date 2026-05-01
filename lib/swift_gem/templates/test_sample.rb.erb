@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+class <%= module_name %>SampleTest < Test::Unit::TestCase
+  test "perform echoes input from skeleton implementation" do
+    assert_equal("hello", <%= module_name %>.perform("hello"))
+    # TODO: Replace with a meaningful assertion once you implement perform.
+  end
+end

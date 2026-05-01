@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+require "swift_gem/mkmf"
+
+SwiftGem::Mkmf.create_swift_makefile(
+  "<%= module_path %>/<%= module_path %>",
+  package: "<%= module_name %>",
+  source_dir: __dir__
+)
