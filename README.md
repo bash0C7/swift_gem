@@ -14,18 +14,52 @@ gem install swift_gem
 
 ## Usage
 
-TODO: Write usage instructions here
+### Scaffold a new Swift-extension gem
+
+```bash
+swift_gem new rb-foo-mac
+```
+
+Creates `./rb-foo-mac/` with a complete swift-gem skeleton (gemspec, Gemfile, Rakefile, lib/, ext/, examples/, test/). Naming transforms strip a leading `rb-` and produce a single top-level `FooMac` module (per the `rb-skypemac` convention).
+
+### Wire up extconf.rb in your gem
+
+```ruby
+# ext/foo_mac/extconf.rb
+require "swift_gem/mkmf"
+
+SwiftGem::Mkmf.create_swift_makefile(
+  "foo_mac/foo_mac",
+  package: "FooMac",
+  source_dir: __dir__
+)
+```
+
+`source_dir: __dir__` is required so that `swift build --package-path` resolves correctly when rake-compiler invokes extconf.rb from `tmp/<arch>/<gem>/<ver>/`.
+
+### Wire up Rakefile
+
+```ruby
+require "rake/extensiontask"
+
+Rake::ExtensionTask.new("foo_mac") do |ext|
+  ext.lib_dir = "lib/foo_mac"
+end
+
+task test: :compile
+```
+
+`bundle exec rake test` then runs swift build, links the C bridge, and runs the spec in one shot.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+```bash
+bundle install
+bundle exec rake test
+```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/bash0C7/swift_gem.
+`bundle exec rake console` starts an IRB session with `SwiftGem::Mkmf` and `SwiftGem::Generator` preloaded.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+MIT.

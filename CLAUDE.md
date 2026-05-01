@@ -1,90 +1,87 @@
 # CLAUDE.md — swift_gem
 
-## 位置付け
+## Position
 
-Ruby ↔ Swift 拡張の **薄いフレームワーク gem**。`ruby-go-gem/go-gem-wrapper` の Swift 版に相当するが、`_tools/ruby_h_to_go` 相当のコード生成（Swift binding 自動生成）は **意図的に scope 外**。CRuby native ext + Swift Package Manager + C bridge の組み合わせを mkmf で繋ぐ最小限の接着剤に徹する。
+A thin framework gem for Ruby ↔ Swift extensions. The Swift counterpart of `ruby-go-gem/go-gem-wrapper`, but the equivalent of `_tools/ruby_h_to_go` (auto-generated bindings) is **intentionally out of scope**. Stays as the minimum glue that connects CRuby native ext + Swift Package Manager + a C bridge through mkmf.
 
-## 動機
+## Core design principles
 
-`bash0C7/rb-vision-ocrmac` のような Apple framework (Vision / AVFoundation / NaturalLanguage / Speech / Sound Analysis 等) を Ruby から呼びたい個別 gem を、毎回ゼロから書かずに済ませる。jakeoeding/swift-gem-poc の単一 gem 内に埋め込まれてた定型を framework に外出し。
+1. Stay simple. The framework's only jobs are "an mkmf shim into SPM" and "a generator that emits a scaffold." Apple frameworks themselves get linked automatically when consumers `import Vision` etc. in their `Package.swift`; this gem stays out of the way.
+2. builder DI. `create_swift_makefile`'s `builder:` lambda lets tests stub the swift toolchain. CI / unit tests don't need swift installed.
+3. `source_dir:` is required. Addresses rake-compiler invoking extconf.rb from `tmp/<arch>/<gem>/<ver>/`. The contract is that the caller (extconf.rb) passes `source_dir: __dir__`.
+4. Scaffold parity. The skeleton the generator emits matches both bundle gem 4.x conventions and the bash0C7 sibling-repo conventions (`vendor/bundle`, `.bundle/config`, gitignored `Gemfile.lock`). Verify against a real consumer (e.g. rb-vision-ocrmac) by diffing — the only differences should be implementation body, fixtures, and build artifacts.
+5. rake-compiler is the consumer's responsibility. Dropping `Rake::ExtensionTask` into the Rakefile happens in the generated gem. The framework does not enforce it but does ship it in the scaffold.
 
-## 核の設計原則
-
-1. **シンプル徹底**: framework gem の責務は「mkmf を SPM に繋ぐシム」と「scaffold を吐く generator」のみ。Apple framework 自体は consumer の `Package.swift` に `import Vision` 等を書けば勝手に link される、framework は関与しない。
-2. **builder DI**: `create_swift_makefile` の `builder:` lambda は swift toolchain を stub できる。CI / unit test では swift 不要。
-3. **`source_dir:` 必須**: rake-compiler が extconf.rb を `tmp/<arch>/<gem>/<ver>/` で実行することへの対応。呼び出し側（extconf.rb）から `source_dir: __dir__` を渡してもらう契約。
-4. **scaffold 整合性**: generator が吐く skeleton は、bundle gem 4.x の慣習 + bash0C7 sibling repo 慣習 (`vendor/bundle`, `.bundle/config`, `Gemfile.lock` ignore) と一致する。consumer (例: rb-vision-ocrmac) と diff = 期待差分 (実装本体・fixture・ビルド成果物) のみ になることを scaffold check で確認すること。
-5. **rake-compiler は consumer 側の責務**: Rakefile に `Rake::ExtensionTask` を仕込むのは generated gem 側。framework は強制しないが scaffold には標準で含める。
-
-## アーキテクチャ
+## Architecture
 
 ```
-swift_gem (この gem)
+swift_gem (this gem)
 ├── lib/swift_gem/mkmf.rb        ─ create_swift_makefile(target, package:, source_dir:, builder:)
 ├── lib/swift_gem/generator.rb   ─ Generator(gem_name).call(dest_dir:)
-├── lib/swift_gem/templates/     ─ 19 template (静的 6 + ERB 13)
+├── lib/swift_gem/templates/     ─ 18 templates (6 static + 12 ERB)
 └── exe/swift_gem                 ─ CLI: swift_gem new <gem-name> [--dest DIR]
 
   ▲ depends on
   │
-consumer gem (例: rb-vision-ocrmac)
+consumer gem (e.g. rb-vision-ocrmac)
 ├── ext/<name>/extconf.rb        ─ require "swift_gem/mkmf" + create_swift_makefile
 ├── ext/<name>/Package.swift     ─ SPM .dynamic library
-├── ext/<name>/Sources/<Mod>/*.swift ─ 実装 + @_cdecl Bridge
+├── ext/<name>/Sources/<Mod>/*.swift ─ implementation + @_cdecl Bridge
 └── ext/<name>/<name>.{c,h}      ─ CRuby ext (Init_<name>, rb_define_singleton_method)
 ```
 
-## モジュール境界
+## Module boundaries
 
-| モジュール | 責務 |
+| Module | Responsibility |
 |---|---|
-| `SwiftGem::Mkmf` | `create_swift_makefile` で `swift build --package-path <dir>` を実行し、`-Wl,-rpath,<dir>/.build/release` `-L<dir>/.build/release` `-l<package>` を $LDFLAGS に注入してから標準 mkmf の `create_makefile` に委譲 |
-| `SwiftGem::Generator` | gem 名から命名 transform (`module_name` / `module_path` / `exe_name`)、ERB テンプレを `dest_dir` に展開、`exe/<name>` に chmod +x |
-| `SwiftGem::Generator::Context` | ERB 内で `<%= module_name %>` 等を method として呼べるための binding holder |
-| `lib/swift_gem/templates/` | 静的: `gitignore` `bundle_config` `LICENSE.txt`<br>ERB: `gemspec` `Gemfile` `Rakefile` `README.md` `lib_main.rb` `lib_version.rb` `ext_Package.swift` `ext_Sources.swift` `ext_Bridge.swift` `ext_main.c` `ext_main.h` `ext_extconf.rb` `examples_cli.swift` `test_helper.rb` `test_sample.rb`<br>**Ruby CLI (exe/) は scaffold 出力に含めない**: Apple framework binding はライブラリ志向 (irb / 他 Ruby から直叩き) が主、CLI が要る gem は scaffold 後に手で `exe/` を追加。`exe_name` transform 自体は public で残してる (将来 CLI を欲しい consumer の参考用) |
-| `exe/swift_gem` | 素 ARGV CLI。`new` サブコマンドのみ。non-empty な `--dest` は refuse |
+| `SwiftGem::Mkmf` | `create_swift_makefile` runs `swift build --package-path <dir>` and injects `-Wl,-rpath,<dir>/.build/release` `-L<dir>/.build/release` `-l<package>` into $LDFLAGS, then delegates to standard mkmf's `create_makefile` |
+| `SwiftGem::Generator` | Naming transforms from gem name (`module_name` / `module_path` / `exe_name`); expands ERB templates into `dest_dir` |
+| `SwiftGem::Generator::Context` | Binding holder so ERB templates can call `<%= module_name %>` etc. as methods |
+| `lib/swift_gem/templates/` | Static: `gitignore`, `bundle_config`, `LICENSE.txt`<br>ERB: `gemspec`, `Gemfile`, `Rakefile`, `README.md`, `lib_main.rb`, `lib_version.rb`, `ext_Package.swift`, `ext_Sources.swift`, `ext_Bridge.swift`, `ext_main.c`, `ext_main.h`, `ext_extconf.rb`, `examples_cli.swift`, `test_helper.rb`, `test_sample.rb` |
+| `exe/swift_gem` | Plain ARGV CLI. `new` subcommand only. Refuses if `--dest` is non-empty |
 
-## 命名 transform 規則
+## Naming transform rules
 
-入力 gem 名から生成する 4 つの派生名。
+Four derived names from the input gem name.
 
-| 派生 | ロジック | 例 (`rb-vision-ocrmac`) | 例 (`my_swift_gem`) |
+| Derived | Logic | Example (`rb-vision-ocrmac`) | Example (`my_swift_gem`) |
 |---|---|---|---|
-| `gem_name` | 入力そのまま | `rb-vision-ocrmac` | `my_swift_gem` |
-| `module_name` | `rb-` prefix 除去 + ハイフン/アンダースコア区切りを CamelCase 連結 | `VisionOcrmac` | `MySwiftGem` |
-| `module_path` | `rb-` prefix 除去 + ハイフン → アンダースコア (snake_case) | `vision_ocrmac` | `my_swift_gem` |
-| `exe_name` | `rb-` prefix 除去 (ハイフンはそのまま) | `vision-ocrmac` | `my_swift_gem` |
+| `gem_name` | input as-is | `rb-vision-ocrmac` | `my_swift_gem` |
+| `module_name` | strip `rb-` prefix + CamelCase the hyphen/underscore split | `VisionOcrmac` | `MySwiftGem` |
+| `module_path` | strip `rb-` prefix + hyphen → underscore (snake_case) | `vision_ocrmac` | `my_swift_gem` |
+| `exe_name` | strip `rb-` prefix (hyphen kept) | `vision-ocrmac` | `my_swift_gem` |
 | `c_symbol_prefix` | `module_path + "_"` | `vision_ocrmac_` | `my_swift_gem_` |
 
-`rb-skypemac` / `rb-appscript` 慣習 = ハイフン区切り gem 名 + トップレベル単一 module の組み合わせを採用。bundle gem デフォルトのネスト namespace (`Rb::Vision::Ocrmac`) は **不採用**。
+Adopts the `rb-skypemac` / `rb-appscript` convention: hyphenated gem name + a single top-level Ruby module. Bundle gem's default of nested namespaces (`Rb::Vision::Ocrmac`) is **not adopted**.
 
-## TDD 規律
+`exe_name` is preserved as a public utility for consumers who want to add a CLI by hand. Generator output itself does not include `exe/`.
 
-- **t-wada 式**: fail first、RED → GREEN → REFACTOR の独立 commit (global CLAUDE.md 準拠)
-- **test-unit** (rspec ではない)。`bundle exec rake test`
-- **mkmf 系 test**: `builder:` を stub に注入して swift toolchain なしで Makefile shape を assert
-- **generator 系 test**: 命名 transform のパラメタライズド + ERB 出力ファイル一覧 + 主要ファイルの key pattern を assert
-- **smoke E2E**: `bundle exec exe/swift_gem new <name>` → 生成された gem で `bundle install && bundle exec rake test` が通ることを最終 acceptance とする (CI には組み込まず手動で実行)
+## TDD discipline
 
-## 関連プロジェクト
+- t-wada style: fail first, RED → GREEN → REFACTOR each as an independent commit (per global CLAUDE.md)
+- test-unit (not rspec). `bundle exec rake test`
+- mkmf tests: inject a `builder:` stub, assert the resulting Makefile shape without needing swift toolchain
+- generator tests: parameterised naming-transform check + asserts on emitted file list and key patterns inside the main files
+- Smoke E2E: `bundle exec exe/swift_gem new <name>` followed by `bundle install && bundle exec rake test` in the generated gem is the final acceptance test (run manually, not in CI)
 
-- `~/dev/src/github.com/bash0C7/rb-vision-ocrmac` — 最初の consumer。Apple Vision OCR の Ruby binding。scaffold 整合性検証の reference
-- `~/dev/src/github.com/bash0C7/archives_go_jp_searcher` — rb-vision-ocrmac の最初の caller。combat proof の最終段
-- 参考: `ruby-go-gem/go-gem-wrapper` (Go 版の先達)、`jakeoeding/swift-gem-poc` (Swift 版 POC、本 gem の構造的雛形)
+## Related projects
 
-## 環境依存情報
+- `~/dev/src/github.com/bash0C7/rb-vision-ocrmac` — first consumer. The Apple Vision OCR Ruby binding. Reference for scaffold-parity verification
+- For reference: `ruby-go-gem/go-gem-wrapper` (the Go-side predecessor), `jakeoeding/swift-gem-poc` (the Swift POC; structural template for this gem)
 
-- macOS 12+ (Vision/AVFoundation 等の最低要件)、Apple Silicon (arm64-darwin) 前提
-- Swift 6.0+ (SPM の `.dynamic` library + `@_cdecl` ABI)
-- Ruby 3.2+、bundler 4.x (`bundle gem --test=test-unit` 慣習)
-- `Gemfile.lock` は library として **track しない** (`.gitignore` 済)
+## Environment requirements
 
-## 禁止事項
+- macOS 12+ (minimum for Vision/AVFoundation etc.), Apple Silicon (arm64-darwin) assumed
+- Swift 6.0+ (SPM `.dynamic` library + `@_cdecl` ABI)
+- Ruby 3.2+, bundler 4.x (`bundle gem --test=test-unit` convention)
+- `Gemfile.lock` is library-style: not git-tracked (in `.gitignore`)
 
-- **Python コードを置かない** (global CLAUDE.md)
-- **`Gemfile.lock` を git track しない** (library なので consumer の lock を尊重)
-- **rake-compiler の代替実装**を framework に組み込まない (consumer の Rakefile に任せる)
-- **Bundler の path: 解決ロジックの再発明** (Bundler 標準で十分)
-- **ruby_h_to_go 相当の Swift binding コード生成** (POC 段階で scope 外、3 個目 consumer ができる頃に再検討)
-- **commit message は英語**、conventional commits 準拠 (global CLAUDE.md)
-- **`.claude/` はコミット対象** (global CLAUDE.md)
+## Prohibitions
+
+- No Python source (per global CLAUDE.md)
+- Do not git-track `Gemfile.lock` (library; the consumer's lock wins)
+- Do not reimplement rake-compiler in the framework; leave that to the consumer's Rakefile
+- Do not reinvent Bundler's path: resolution; Bundler's stock behavior is enough
+- No Swift binding code generation (the equivalent of `ruby_h_to_go`); intentionally out of scope, revisit when a third consumer exists
+- Commit messages in English, conventional commits style (per global CLAUDE.md)
+- `.claude/` is committed (per global CLAUDE.md)
