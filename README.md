@@ -14,7 +14,7 @@ gem install swift_gem
 
 ## Tutorial: build `rb-hello-swift`
 
-A walkthrough that builds a tiny gem whose `HelloSwift.perform` always returns `"Hello, Swift!"` from a Swift function. About three edits.
+A walkthrough that builds a tiny gem whose `HelloSwift.perform("RUBY")` returns `"Hello, Swift! RUBY"` — the Swift side prefixes a greeting and echoes whatever Ruby passed in, so the round-trip is visible end-to-end. About three edits.
 
 ### 1. Scaffold
 
@@ -38,7 +38,7 @@ Open `ext/hello_swift/Sources/HelloSwift/HelloSwift.swift` and replace the body 
 import Foundation
 
 func hello_swift_perform(_ input: String) -> String {
-    return "Hello, Swift!"
+    return "Hello, Swift! \(input)"
 }
 ```
 
@@ -52,8 +52,8 @@ Edit `test/hello_swift/sample_test.rb` so it pins the new contract:
 require "test_helper"
 
 class HelloSwiftSampleTest < Test::Unit::TestCase
-  test "perform returns the canned greeting" do
-    assert_equal("Hello, Swift!", HelloSwift.perform("anything"))
+  test "perform greets with the input echoed back" do
+    assert_equal("Hello, Swift! RUBY", HelloSwift.perform("RUBY"))
   end
 end
 ```
@@ -74,8 +74,8 @@ bundle exec rake console
 ```
 
 ```ruby
-HelloSwift.perform("anything")
-# => "Hello, Swift!"
+HelloSwift.perform("RUBY")
+# => "Hello, Swift! RUBY"
 ```
 
 That's the full loop. To grow the gem, add more `@_cdecl` functions in `Bridge.swift`, mirror them in `hello_swift.h`, and expose them via `rb_define_singleton_method` in `hello_swift.c`.
