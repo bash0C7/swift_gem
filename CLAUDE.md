@@ -18,7 +18,7 @@ A thin framework gem for Ruby ↔ Swift extensions. The Swift counterpart of `ru
 swift_gem (this gem)
 ├── lib/swift_gem/mkmf.rb        ─ create_swift_makefile(target, package:, source_dir:, builder:)
 ├── lib/swift_gem/generator.rb   ─ Generator(gem_name).call(dest_dir:)
-├── lib/swift_gem/templates/     ─ 18 templates (6 static + 12 ERB)
+├── lib/swift_gem/templates/     ─ 18 templates (3 static + 15 ERB)
 └── Rakefile                      ─ rake "new[gem-name,dest_dir]" wraps Generator
 
   ▲ depends on
