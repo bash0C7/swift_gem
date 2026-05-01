@@ -16,11 +16,19 @@ gem install swift_gem
 
 ### Scaffold a new Swift-extension gem
 
+Clone this repo, `bundle install`, then:
+
 ```bash
-swift_gem new rb-foo-mac
+bundle exec rake "new[rb-foo-mac]"
 ```
 
-Creates `./rb-foo-mac/` with a complete swift-gem skeleton (gemspec, Gemfile, Rakefile, lib/, ext/, examples/, test/). Naming transforms strip a leading `rb-` and produce a single top-level `FooMac` module (per the `rb-skypemac` convention).
+Or specify a destination directory:
+
+```bash
+bundle exec rake "new[rb-foo-mac,/path/to/dest]"
+```
+
+Creates a complete swift-gem skeleton at `./rb-foo-mac/` (or the given destination): gemspec, Gemfile, Rakefile, lib/, ext/, examples/, test/. Naming transforms strip a leading `rb-` and produce a single top-level `FooMac` module (per the `rb-skypemac` convention).
 
 ### Wire up extconf.rb in your gem
 
