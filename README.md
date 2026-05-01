@@ -60,6 +60,15 @@ bundle exec rake test
 
 `bundle exec rake console` starts an IRB session with `SwiftGem::Mkmf` and `SwiftGem::Generator` preloaded.
 
+## Acknowledgments
+
+The architecture of this gem is modeled after the work of [@sue445](https://github.com/sue445):
+
+- ["Building Ruby native extensions in Go" (RubyKaigi 2025)](https://rubykaigi.org/2025/presentations/sue445.html) — the talk that demonstrated how to ship CRuby native extensions whose implementation lives in another language behind an `@_cdecl`-style C bridge.
+- [ruby-go-gem/go-gem-wrapper](https://github.com/ruby-go-gem/go-gem-wrapper/tree/main/_gem) (`go_gem`) — `swift_gem` borrows directly from this framework's pattern: an mkmf shim that appends linker flags before delegating to `create_makefile`, and a `Rake::ExtensionTask`-based dev loop. The Swift version replaces `go build -buildmode=c-shared` with `swift build -c release --package-path` and an SPM `.dynamic` library.
+
+`ruby_h_to_go`-style binding generation is intentionally **not** ported; consumers write the C bridge by hand, the same way `jakeoeding/swift-gem-poc` does.
+
 ## License
 
 MIT.
