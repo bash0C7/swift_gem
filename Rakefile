@@ -20,23 +20,27 @@ task :console do
   IRB.start
 end
 
-desc "Scaffold a new swift-extension gem: rake \"new[rb-foo-mac]\" or rake \"new[rb-foo-mac,/path/to/dest]\""
-task :new, [:gem_name, :dest] do |_, args|
-  unless args[:gem_name]
-    warn 'usage: rake "new[gem_name]" or rake "new[gem_name,dest_dir]"'
+desc "Scaffold a new swift-extension gem: rake new <gem_name> [dest_dir]"
+task :new do
+  # Rake normally treats positional ARGV entries as task names. Read them
+  # directly and stub each one as a no-op task so Rake stops complaining.
+  positional = ARGV.drop(1)
+  if positional.empty?
+    warn "usage: bundle exec rake new <gem_name> [dest_dir]"
     exit 1
   end
+  positional.each { |arg| task(arg.to_sym) {} }
 
-  $LOAD_PATH.unshift File.expand_path("lib", __dir__)
-  require "swift_gem/generator"
-
-  dest = args[:dest] || File.join(Dir.pwd, args[:gem_name])
+  gem_name, dest_arg = positional
+  dest = dest_arg || File.join(Dir.pwd, gem_name)
   if File.exist?(dest) && !Dir.empty?(dest)
     warn "destination already exists and is not empty: #{dest}"
     exit 2
   end
 
-  SwiftGem::Generator.new(args[:gem_name]).call(dest_dir: dest)
+  $LOAD_PATH.unshift File.expand_path("lib", __dir__)
+  require "swift_gem/generator"
+  SwiftGem::Generator.new(gem_name).call(dest_dir: dest)
   puts "Created swift-gem skeleton at #{dest}"
 end
 

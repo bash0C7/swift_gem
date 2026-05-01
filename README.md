@@ -24,7 +24,7 @@ Clone this repo, install deps, then generate the skeleton next to it (so the gen
 git clone https://github.com/bash0C7/swift_gem
 cd swift_gem
 bundle install
-bundle exec rake "new[rb-hello-swift]"
+bundle exec rake new rb-hello-swift ../rb-hello-swift
 cd ../rb-hello-swift
 ```
 
@@ -82,7 +82,7 @@ That's the full loop. To grow the gem, add more `@_cdecl` functions in `Bridge.s
 
 ## Generated files
 
-`bundle exec rake "new[<gem-name>]"` writes 18 files. Edit the rows marked **EDIT** to flesh out your gem; the rest is infrastructure.
+`bundle exec rake new <gem-name> [dest_dir]` writes 18 files. Edit the rows marked **EDIT** to flesh out your gem; the rest is infrastructure.
 
 | Path | Kind | Role |
 |---|---|---|

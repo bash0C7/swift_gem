@@ -19,7 +19,7 @@ swift_gem (this gem)
 ├── lib/swift_gem/mkmf.rb        ─ create_swift_makefile(target, package:, source_dir:, builder:)
 ├── lib/swift_gem/generator.rb   ─ Generator(gem_name).call(dest_dir:)
 ├── lib/swift_gem/templates/     ─ 18 templates (3 static + 15 ERB)
-└── Rakefile                      ─ rake "new[gem-name,dest_dir]" wraps Generator
+└── Rakefile                      ─ rake new <gem_name> [dest_dir] wraps Generator
 
   ▲ depends on
   │
@@ -38,7 +38,7 @@ consumer gem (e.g. rb-vision-ocrmac)
 | `SwiftGem::Generator` | Naming transforms from gem name (`module_name` / `module_path` / `exe_name`); expands ERB templates into `dest_dir` |
 | `SwiftGem::Generator::Context` | Binding holder so ERB templates can call `<%= module_name %>` etc. as methods |
 | `lib/swift_gem/templates/` | Static: `gitignore`, `bundle_config`, `LICENSE.txt`<br>ERB: `gemspec`, `Gemfile`, `Rakefile`, `README.md`, `lib_main.rb`, `lib_version.rb`, `ext_Package.swift`, `ext_Sources.swift`, `ext_Bridge.swift`, `ext_main.c`, `ext_main.h`, `ext_extconf.rb`, `examples_cli.swift`, `test_helper.rb`, `test_sample.rb` |
-| `Rakefile` `task :new` | `rake "new[gem_name,dest]"`. Wraps Generator; refuses if dest exists and is non-empty. No standalone CLI shipped — clone + `bundle install` + rake is the entry point |
+| `Rakefile` `task :new` | `rake new <gem_name> [dest_dir]` (positional args read directly from ARGV; each is stubbed as a no-op task so Rake doesn't try to invoke them). Wraps Generator; refuses if dest exists and is non-empty. No standalone CLI shipped — clone + `bundle install` + rake is the entry point |
 
 ## Naming transform rules
 
@@ -62,7 +62,7 @@ Adopts the `rb-skypemac` / `rb-appscript` convention: hyphenated gem name + a si
 - test-unit (not rspec). `bundle exec rake test`
 - mkmf tests: inject a `builder:` stub, assert the resulting Makefile shape without needing swift toolchain
 - generator tests: parameterised naming-transform check + asserts on emitted file list and key patterns inside the main files
-- Smoke E2E: `bundle exec rake "new[<name>]"` followed by `bundle install && bundle exec rake test` in the generated gem is the final acceptance test (run manually, not in CI)
+- Smoke E2E: `bundle exec rake new <name>` followed by `bundle install && bundle exec rake test` in the generated gem is the final acceptance test (run manually, not in CI)
 
 ## Related projects
 
