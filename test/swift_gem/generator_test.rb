@@ -55,6 +55,14 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_match(/SwiftGem::Mkmf\.create_swift_makefile/, extconf)
       assert_match(/package:\s*["']FooMac["']/, extconf)
       assert_match(/source_dir:\s*__dir__/, extconf)
+
+      bridge = File.read(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
+      assert_match(/@c\("foo_mac_perform"\)/, bridge,
+                   "Bridge should use the SE-0495 @c attribute")
+      assert_match(/@c\("foo_mac_free"\)/, bridge,
+                   "Bridge should use the SE-0495 @c attribute")
+      assert_not_match(/@_cdecl/, bridge,
+                       "Bridge should not use the experimental @_cdecl after Swift 6.3 migration")
     end
   end
 
