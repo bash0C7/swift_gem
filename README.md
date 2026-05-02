@@ -121,7 +121,13 @@ That's the full loop. To grow the gem, add more `@c` functions in `Bridge.swift`
 - `<gem>.c` copies that into a Ruby UTF-8 String via `rb_utf8_str_new_cstr`, then calls the paired `*_free` to release the Swift-allocated buffer before returning.
 - Ruby owns the GC'd String; the Swift heap allocation is gone.
 
-The free happens inside the C ext call rather than at GC time, which is tighter than the LT's `FFI` + `FFI::AutoPointer` pattern.
+The free happens inside the C ext call rather than at GC time.
+
+### Distribution: why the auto-generated header isn't shipped
+
+`<ModuleName>-Swift.h` is a build artifact, not a source file. It is gitignored, and `spec.files` (driven by `git ls-files`) excludes it from the published `.gem` package. This is fine because `swift_gem`-based gems are source-distributed: when the end user runs `gem install <gem>`, RubyGems invokes `extconf.rb` (registered as `spec.extensions`), which calls `SwiftGem::Mkmf.create_swift_makefile`, which in turn runs `swift build -emit-clang-header-path` and regenerates the header on the user's machine. The Makefile then compiles `<gem>.c` against the freshly emitted header. End users therefore need Swift 6.3+ installed (the same Requirements section above); `SwiftGem::SwiftVersionCheck` aborts the install with a friendly message if the toolchain is missing or too old.
+
+This pattern would change for a pre-compiled native gem (e.g. shipping a built `.bundle` for `arm64-darwin`), but `swift_gem` does not currently scaffold that path.
 
 ## Why no Swift-binding generator
 
