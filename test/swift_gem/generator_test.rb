@@ -63,6 +63,10 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
                    "Bridge should use the SE-0495 @c attribute")
       assert_not_match(/@_cdecl/, bridge,
                        "Bridge should not use the experimental @_cdecl after Swift 6.3 migration")
+
+      package = File.read(File.join(gem_dir, "ext/foo_mac/Package.swift"))
+      assert_match(/swift-tools-version:\s*6\.3/, package,
+                   "Package.swift should declare swift-tools-version 6.3 (SE-0495 requires Swift 6.3)")
     end
   end
 
