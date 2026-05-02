@@ -2,6 +2,14 @@
 
 Helpers for building Ruby native extensions whose implementation lives in Swift via Swift Package Manager. macOS / Apple Silicon only. Targets Apple platform frameworks (Vision, AVFoundation, NaturalLanguage, Speech, etc.) reachable from Swift.
 
+## Requirements
+
+- macOS 12+, Apple Silicon
+- Swift 6.3+ (SE-0495 `@c` attribute)
+- Ruby 3.2+, Bundler 4.x
+
+The recommended toolchain installer is [swiftly](https://www.swift.org/install/macos/). Xcode is *not* required — `brew install swiftly && swiftly install 6.3 && swiftly use 6.3` is enough. Coexists with any Xcode-bundled Swift via PATH.
+
 ## Installation
 
 ```bash
@@ -78,7 +86,7 @@ HelloSwift.perform("RUBY")
 # => "Hello, Swift! RUBY"
 ```
 
-That's the full loop. To grow the gem, add more `@_cdecl` functions in `Bridge.swift`, mirror them in `hello_swift.h`, and expose them via `rb_define_singleton_method` in `hello_swift.c`.
+That's the full loop. To grow the gem, add more `@c` functions in `Bridge.swift`, mirror them in `hello_swift.h`, and expose them via `rb_define_singleton_method` in `hello_swift.c`.
 
 ## Generated files
 
@@ -97,7 +105,7 @@ That's the full loop. To grow the gem, add more `@_cdecl` functions in `Bridge.s
 | `lib/<module_path>/version.rb` | ERB | `VERSION = "0.1.0"` |
 | `ext/<module_path>/Package.swift` | ERB | SPM `.dynamic` library targeting macOS 12+ |
 | `ext/<module_path>/Sources/<ModuleName>/<ModuleName>.swift` | ERB | **EDIT** — your Swift implementation. Default echoes the input |
-| `ext/<module_path>/Sources/<ModuleName>/<ModuleName>Bridge.swift` | ERB | **EDIT** — `@_cdecl` bridge with `strdup` + paired `_free` |
+| `ext/<module_path>/Sources/<ModuleName>/<ModuleName>Bridge.swift` | ERB | **EDIT** — `@c` bridge with `strdup` + paired `_free` |
 | `ext/<module_path>/<module_path>.c` | ERB | **EDIT** — CRuby ext: `Init_<name>`, `rb_define_singleton_method`, calls the Swift bridge, copies the result, frees the Swift buffer |
 | `ext/<module_path>/<module_path>.h` | ERB | **EDIT** — C prototypes mirroring `Bridge.swift` |
 | `ext/<module_path>/extconf.rb` | ERB | `SwiftGem::Mkmf.create_swift_makefile(...)` with `source_dir: __dir__` |
@@ -108,7 +116,7 @@ That's the full loop. To grow the gem, add more `@_cdecl` functions in `Bridge.s
 ## Memory model
 
 - Swift returns a Swift `String`.
-- `Bridge.swift`'s `@_cdecl` calls `strdup(result)` so the caller owns a malloc'd C string.
+- `Bridge.swift`'s `@c` calls `strdup(result)` so the caller owns a malloc'd C string.
 - `<gem>.c` copies that into a Ruby UTF-8 String via `rb_utf8_str_new_cstr`, then calls the paired `*_free` to release the Swift-allocated buffer before returning.
 - Ruby owns the GC'd String; the Swift heap allocation is gone.
 
@@ -121,7 +129,7 @@ The free happens inside the C ext call rather than at GC time, which is tighter 
 ## Acknowledgments
 
 - [@sue445](https://github.com/sue445)'s [go-gem-wrapper](https://github.com/ruby-go-gem/go-gem-wrapper/tree/main/_gem) (`go_gem`) and the [RubyKaigi 2025 talk](https://rubykaigi.org/2025/presentations/sue445.html). The mkmf shim and `Rake::ExtensionTask` flow are ports of `go_gem`'s pattern, with `swift build -c release --package-path` + an SPM `.dynamic` library in place of `go build -buildmode=c-shared`.
-- [@sussan0416](https://github.com/sussan0416)'s [Tram LT (2026-04-25)](https://www.docswell.com/s/sussan0416/K7NG3W-2026-04-25-Tram-LT). The Swift-side recipe the scaffold ships — `@_cdecl` + `strdup` + a paired `*_free`.
+- [@sussan0416](https://github.com/sussan0416)'s [Tram LT (2026-04-25)](https://www.docswell.com/s/sussan0416/K7NG3W-2026-04-25-Tram-LT). The Swift-side recipe the scaffold ships — `@_cdecl` (now `@c` per [SE-0495](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0495-cdecl.md)) + `strdup` + a paired `*_free`.
 - [jakeoeding/swift-gem-poc](https://github.com/jakeoeding/swift-gem-poc). Concrete layout reference for the hand-written C bridge.
 
 ## License

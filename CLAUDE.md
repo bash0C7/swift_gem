@@ -26,7 +26,7 @@ swift_gem (this gem)
 consumer gem (e.g. rb-vision-ocrmac)
 ├── ext/<name>/extconf.rb        ─ require "swift_gem/mkmf" + create_swift_makefile
 ├── ext/<name>/Package.swift     ─ SPM .dynamic library
-├── ext/<name>/Sources/<Mod>/*.swift ─ implementation + @_cdecl Bridge
+├── ext/<name>/Sources/<Mod>/*.swift ─ implementation + @c Bridge (SE-0495)
 └── ext/<name>/<name>.{c,h}      ─ CRuby ext (Init_<name>, rb_define_singleton_method)
 ```
 
@@ -72,7 +72,7 @@ Adopts the `rb-skypemac` / `rb-appscript` convention: hyphenated gem name + a si
 ## Environment requirements
 
 - macOS 12+ (minimum for Vision/AVFoundation etc.), Apple Silicon (arm64-darwin) assumed
-- Swift 6.0+ (SPM `.dynamic` library + `@_cdecl` ABI)
+- Swift 6.3+ (SPM `.dynamic` library + `@c` ABI; SE-0495). Install via [swiftly](https://www.swift.org/install/macos/) — Xcode bundle not required, coexists with system toolchains.
 - Ruby 3.2+, bundler 4.x (`bundle gem --test=test-unit` convention)
 - `Gemfile.lock` is library-style: not git-tracked (in `.gitignore`)
 
