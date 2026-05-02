@@ -1,13 +1,13 @@
 import Foundation
 
-@c("<%= c_symbol_prefix %>perform")
+@c
 public func <%= c_symbol_prefix %>perform(_ input: UnsafePointer<CChar>) -> UnsafeMutablePointer<CChar> {
     let s = String(cString: input)
     let result = <%= module_path %>_perform(s)
     return strdup(result)!
 }
 
-@c("<%= c_symbol_prefix %>free")
+@c
 public func <%= c_symbol_prefix %>free(_ ptr: UnsafeMutablePointer<CChar>?) {
     free(ptr)
 }

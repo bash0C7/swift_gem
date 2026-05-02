@@ -57,12 +57,14 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_match(/source_dir:\s*__dir__/, extconf)
 
       bridge = File.read(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
-      assert_match(/@c\("foo_mac_perform"\)/, bridge,
-                   "Bridge should use the SE-0495 @c attribute")
-      assert_match(/@c\("foo_mac_free"\)/, bridge,
+      assert_match(/^@c\npublic func foo_mac_perform/, bridge,
+                   "Bridge should use the SE-0495 @c attribute (bare form; Swift function name doubles as the C symbol)")
+      assert_match(/^@c\npublic func foo_mac_free/, bridge,
                    "Bridge should use the SE-0495 @c attribute")
       assert_not_match(/@_cdecl/, bridge,
                        "Bridge should not use the experimental @_cdecl after Swift 6.3 migration")
+      assert_not_match(/@c\([^)]*"/, bridge,
+                       "@c does not accept a string literal; pass a bare C identifier or omit the argument")
 
       package = File.read(File.join(gem_dir, "ext/foo_mac/Package.swift"))
       assert_match(/swift-tools-version:\s*6\.3/, package,
