@@ -45,4 +45,15 @@ class SwiftGemSwiftVersionCheckTest < Test::Unit::TestCase
       Check.call!(prober: prober)
     end
   end
+
+  test "rake test depends on rake check" do
+    require "rake"
+    Rake.application = Rake::Application.new
+    Rake.load_rakefile(File.expand_path("../../Rakefile", __dir__))
+    test_task = Rake::Task["test"]
+    assert_includes test_task.prerequisites, "check",
+                    "rake test should depend on rake check so an old toolchain fails fast"
+    assert(Rake::Task.task_defined?("check"),
+           "rake check task should be defined")
+  end
 end
