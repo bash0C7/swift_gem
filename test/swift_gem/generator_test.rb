@@ -35,7 +35,8 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMac.swift"))
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.h"))
+      assert_false(File.exist?(File.join(gem_dir, "ext/foo_mac/foo_mac.h")),
+                   "hand-written .h should be removed; the C ext now includes the SPM-generated <Package>-Swift.h")
       assert_file_exist(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
 
       # pure Swift sample (no Ruby CLI by default; see CLAUDE.md)
@@ -69,6 +70,12 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       package = File.read(File.join(gem_dir, "ext/foo_mac/Package.swift"))
       assert_match(/swift-tools-version:\s*6\.3/, package,
                    "Package.swift should declare swift-tools-version 6.3 (SE-0495 requires Swift 6.3)")
+
+      ext_c = File.read(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
+      assert_match(/#include\s+"FooMac-Swift\.h"/, ext_c,
+                   "C ext should include the auto-generated <Package>-Swift.h emitted by 'swift build -emit-clang-header-path'")
+      assert_not_match(/#include\s+"foo_mac\.h"/, ext_c,
+                       "C ext should not reference the removed hand-written header")
     end
   end
 
