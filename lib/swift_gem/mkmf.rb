@@ -8,9 +8,12 @@ module SwiftGem
     extend ::MakeMakefile
 
     DEFAULT_BUILDER = lambda do |package, source_dir|
-      unless system("swift", "build", "-c", "release", "--package-path", source_dir)
-        raise "swift build failed for package #{package.inspect}"
-      end
+      header_path = File.join(File.expand_path(source_dir), "#{package}-Swift.h")
+      ok = system(
+        "swift", "build", "-c", "release", "--package-path", source_dir,
+        "-Xswiftc", "-emit-clang-header-path", "-Xswiftc", header_path
+      )
+      raise "swift build failed for package #{package.inspect}" unless ok
       File.expand_path(".build/release", source_dir)
     end
 
@@ -18,6 +21,7 @@ module SwiftGem
                                    swift_version_probe: SwiftVersionCheck.method(:default_probe))
       SwiftVersionCheck.call!(prober: swift_version_probe)
       lib_dir = builder.call(package, source_dir)
+      $CFLAGS  << " -I#{File.expand_path(source_dir)}"
       $LDFLAGS << " -Wl,-rpath,#{lib_dir} -L#{lib_dir} -l#{package}"
       create_makefile(target)
     end

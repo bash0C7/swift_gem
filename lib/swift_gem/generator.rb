@@ -21,7 +21,6 @@ module SwiftGem
       ["ext_Sources.swift.erb",  "ext/%{module_path}/Sources/%{module_name}/%{module_name}.swift"],
       ["ext_Bridge.swift.erb",   "ext/%{module_path}/Sources/%{module_name}/%{module_name}Bridge.swift"],
       ["ext_main.c.erb",         "ext/%{module_path}/%{module_path}.c"],
-      ["ext_main.h.erb",         "ext/%{module_path}/%{module_path}.h"],
       ["ext_extconf.rb.erb",     "ext/%{module_path}/extconf.rb"],
       ["examples_cli.swift.erb", "examples/%{module_path}.swift"],
       ["test_helper.rb.erb",     "test/test_helper.rb"],

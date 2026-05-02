@@ -35,8 +35,8 @@ class SwiftGemMkmfTest < Test::Unit::TestCase
         assert_match(%r{-Wl,-rpath,/some/swift/pkg/dir/\.build/release}, content)
         assert_match(%r{-L/some/swift/pkg/dir/\.build/release}, content)
         assert_match(/-lToy/, content)
-        assert_match(%r{-I/some/swift/pkg/dir/\.build/release}, content,
-                     "CFLAGS should include the SPM build dir so the C ext can #include the auto-generated <Package>-Swift.h")
+        assert_match(%r{-I/some/swift/pkg/dir(?:[ "]|$)}, content,
+                     "CFLAGS should include the source_dir so the C ext can #include the auto-generated <Package>-Swift.h that swift build emits next to Package.swift (SPM cleans .build/, so we drop the header in source_dir)")
       end
     end
   end

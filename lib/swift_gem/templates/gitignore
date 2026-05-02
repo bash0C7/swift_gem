@@ -16,6 +16,7 @@ ext/**/*.o
 ext/**/*.bundle
 ext/**/*.bundle.dSYM/
 ext/**/mkmf.log
+ext/**/*-Swift.h
 lib/**/*.bundle
 lib/**/*.bundle.dSYM/
 /tmp/

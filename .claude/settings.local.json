@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api *)",
+      "Bash(PATH=/usr/bin:/bin bundle exec rake check)"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 #include <ruby.h>
-#include "<%= module_path %>.h"
+#include "<%= module_name %>-Swift.h"
 
 static VALUE rb_<%= module_path %>_perform(VALUE self, VALUE input) {
     const char *c_input = StringValueCStr(input);
