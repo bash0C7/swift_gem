@@ -3,11 +3,24 @@
 require "bundler/gem_tasks"
 require "rake/testtask"
 
+desc "Verify the active Swift toolchain is 6.3 or newer (SE-0495 @c)"
+task :check do
+  $LOAD_PATH.unshift File.expand_path("lib", __dir__)
+  require "swift_gem/swift_version_check"
+  begin
+    version = SwiftGem::SwiftVersionCheck.call!
+    puts "swift_gem: Swift #{version} OK"
+  rescue SwiftGem::SwiftVersionCheck::IncompatibleSwiftVersion => e
+    abort e.message
+  end
+end
+
 Rake::TestTask.new(:test) do |t|
   t.libs << "test"
   t.libs << "lib"
   t.test_files = FileList["test/**/*_test.rb"]
 end
+task test: :check
 
 desc "Start an IRB console with swift_gem preloaded"
 task :console do
