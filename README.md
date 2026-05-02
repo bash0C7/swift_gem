@@ -10,6 +10,8 @@ Helpers for building Ruby native extensions whose implementation lives in Swift 
 
 The recommended toolchain installer is [swiftly](https://www.swift.org/install/macos/). Xcode is *not* required — `brew install swiftly && swiftly install 6.3 && swiftly use 6.3` is enough. Coexists with any Xcode-bundled Swift via PATH.
 
+`bundle exec rake check` verifies the active toolchain is 6.3+; it runs automatically before `rake test`.
+
 ## Installation
 
 ```bash
