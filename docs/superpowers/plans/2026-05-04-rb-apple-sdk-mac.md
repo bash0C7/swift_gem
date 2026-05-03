@@ -10,6 +10,19 @@
 
 ---
 
+## Environment Setup (run once per shell session)
+
+The system's default `swift` (`/usr/bin/swift`) is 6.2.4, which lacks SE-0495 `@c`. Activate swiftly's 6.3.1 toolchain before any `bundle exec rake compile` / `rake test` invocation:
+
+```bash
+. ~/.swiftly/env.sh
+swift --version   # Should report Apple Swift version 6.3.1
+```
+
+This puts `~/.swiftly/bin` on `PATH`. Do NOT prefix commands with `PATH=/usr/bin:/bin` — that strips the swiftly shim and breaks the build.
+
+---
+
 ## File Structure
 
 ```
@@ -147,8 +160,8 @@ Edit `rb-apple-sdk-mac.gemspec` and add:
 
 ```bash
 bundle install
-PATH=/usr/bin:/bin bundle exec rake compile
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake compile
+bundle exec rake test
 ```
 
 Expected: scaffold tests pass with placeholder ext.
@@ -194,7 +207,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_ref_table.rb
+bundle exec rake test TEST=test/test_ref_table.rb
 git add test/test_ref_table.rb
 git commit -m "test: add failing spec for Pillar 1 RefTable"
 ```
@@ -292,7 +305,7 @@ void Init_apple_sdk_mac_runtime(void) {
 - [ ] **Step 2.5: Compile & test**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 1 RefTable with retain/release/lookup"
 ```
@@ -331,7 +344,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_marshal.rb
+bundle exec rake test TEST=test/test_marshal.rb
 git add test/test_marshal.rb
 git commit -m "test: add failing spec for Pillar 2 Marshal"
 ```
@@ -413,7 +426,7 @@ In `Init_apple_sdk_mac_runtime`:
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 2 Marshal with string/int/array primitives"
 ```
@@ -448,7 +461,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_error_bridge.rb
+bundle exec rake test TEST=test/test_error_bridge.rb
 git add test/test_error_bridge.rb
 git commit -m "test: add failing spec for Pillar 5 ErrorBridge"
 ```
@@ -509,7 +522,7 @@ Register in `Init_`:
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 5 ErrorBridge raise routing"
 ```
@@ -645,7 +658,7 @@ static VALUE rb_arc_counter_value(VALUE self, VALUE h) {
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 4 ARCBridge with Ruby GC finalizer integration"
 ```
@@ -751,7 +764,7 @@ Inside `Init_apple_sdk_mac_runtime`:
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 3 CallbackBridge basic @c convention"
 ```
@@ -861,7 +874,7 @@ static VALUE rb_threading_poll(VALUE self, VALUE timeout) {
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 7 ThreadingBridge deferred-queue mode"
 ```
@@ -951,7 +964,7 @@ static VALUE rb_async_await_sleep(VALUE self, VALUE millis) {
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 6 AsyncBridge synchronous await helper"
 ```
@@ -1028,7 +1041,7 @@ static VALUE rb_runloop_pump(VALUE self, VALUE timeout) {
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 8 RunLoopBridge via CFRunLoopRunInMode"
 ```
@@ -1129,7 +1142,7 @@ static VALUE rb_conformance_release(VALUE self, VALUE handle) {
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test
+bundle exec rake clobber compile test
 git add -A
 git commit -m "feat: implement Pillar 9 ConformanceBridge skeleton (handler-table registry)"
 ```
@@ -1249,7 +1262,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_config.rb
+bundle exec rake test TEST=test/test_config.rb
 git add -A
 git commit -m "feat: add Config with XDG/ENV/YAML/programmatic layered defaults"
 ```
@@ -1432,7 +1445,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_compiled_glue_cache.rb
+bundle exec rake test TEST=test/test_compiled_glue_cache.rb
 git add -A
 git commit -m "feat: add CompiledGlueCache (SQLite RW + FS layout)"
 ```
@@ -1727,7 +1740,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_template_generator.rb
+bundle exec rake test TEST=test/test_template_generator.rb
 git add -A
 git commit -m "feat: add TemplateGenerator with v1 shape catalog (C functions out-param style)"
 ```
@@ -1993,7 +2006,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_validation_gates.rb
+bundle exec rake test TEST=test/test_validation_gates.rb
 git add -A
 git commit -m "feat: add ValidationGates 3/4/5 (imports, banned APIs, glue shape)"
 ```
@@ -2097,7 +2110,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_swiftc_invoker.rb
+bundle exec rake test TEST=test/test_swiftc_invoker.rb
 git add -A
 git commit -m "feat: add SwiftcInvoker (xcrun --show-sdk-path, arm64-apple-macos26.0 target)"
 ```
@@ -2270,7 +2283,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_glue_compiler.rb
+bundle exec rake test TEST=test/test_glue_compiler.rb
 git add -A
 git commit -m "feat: add GlueCompiler orchestrator with Template-first / LLM-fallback"
 ```
@@ -2386,7 +2399,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber compile test TEST=test/test_glue_loader.rb
+bundle exec rake clobber compile test TEST=test/test_glue_loader.rb
 git add -A
 git commit -m "feat: add GlueLoader with dlopen/dlsym + in-process pointer cache"
 ```
@@ -2498,7 +2511,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_dispatcher.rb
+bundle exec rake test TEST=test/test_dispatcher.rb
 git add -A
 git commit -m "feat: add Dispatcher (knowledge → cache → loader → invoke)"
 ```
@@ -2605,7 +2618,7 @@ end
 > **Implementation note:** This is the v1 strict-mode SecurityCop. The user's main program is unaffected because Ruby::Box's "Independent monkey patches" semantics confine these patches to the box. If a needed exception arises (e.g., Apple-box internal must read a config file), add a narrow whitelist function rather than weakening the module-level overrides.
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_security_cop.rb
+bundle exec rake test TEST=test/test_security_cop.rb
 git add -A
 git commit -m "feat: add SecurityCop with strict in-box overrides for eval-family/process/file/net"
 ```
@@ -2748,7 +2761,7 @@ end
 ```
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_namespace_builder.rb
+bundle exec rake test TEST=test/test_namespace_builder.rb
 git add -A
 git commit -m "feat: add NamespaceBuilder eager-defining functions and type proxies"
 ```
@@ -2975,7 +2988,7 @@ end
 > **Implementation note:** The `Apple.require` line works only when `Ruby::Box.enabled?` is true. The fallback `Module.new` path is for development environments where Ruby::Box is unavailable. The `install_into_box` call eagerly populates the namespace using the existing knowledge base; consumers calling `Apple::CoreMIDI.SomeFn` get methods that route through `Apple.discover` lazily on first use.
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake test
 git add -A
 git commit -m "feat: bootstrap Apple Ruby::Box with public API surface"
 ```

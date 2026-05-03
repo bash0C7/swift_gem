@@ -10,6 +10,19 @@
 
 ---
 
+## Environment Setup (run once per shell session)
+
+The system's default `swift` (`/usr/bin/swift`) is 6.2.4, which lacks SE-0495 `@c`. Activate swiftly's 6.3.1 toolchain before any `bundle exec rake compile` / `rake test` invocation:
+
+```bash
+. ~/.swiftly/env.sh
+swift --version   # Should report Apple Swift version 6.3.1
+```
+
+This puts `~/.swiftly/bin` on `PATH`. Do NOT prefix commands with `PATH=/usr/bin:/bin` — that strips the swiftly shim and breaks the build.
+
+---
+
 ## File Structure
 
 After Task 1, the gem layout (under `~/dev/src/github.com/bash0C7/rb-foundation-model-mac/`):
@@ -76,8 +89,8 @@ Expected: `~/dev/src/github.com/bash0C7/rb-foundation-model-mac/` exists with `e
 ```bash
 cd ~/dev/src/github.com/bash0C7/rb-foundation-model-mac
 bundle install
-PATH=/usr/bin:/bin bundle exec rake compile
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake compile
+bundle exec rake test
 ```
 
 Expected: tests pass on the generated placeholder `perform` method.
@@ -130,8 +143,8 @@ Note: Foundation Models is a system framework on macOS 26+; no explicit `linkedF
 - [ ] **Step 2.2: Verify the package still builds against new platform**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber
-PATH=/usr/bin:/bin bundle exec rake compile
+bundle exec rake clobber
+bundle exec rake compile
 ```
 
 Expected: clean compile with no errors.
@@ -168,7 +181,7 @@ end
 - [ ] **Step 3.2: Run the test, expect failure**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake test
 ```
 
 Expected: failure with `NameError: uninitialized constant AppleFoundationModel` or `NoMethodError: undefined method 'generate'` (depending on what scaffolding placeholder generated).
@@ -307,9 +320,9 @@ end
 - [ ] **Step 4.5: Compile and run the test**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber
-PATH=/usr/bin:/bin bundle exec rake compile
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake clobber
+bundle exec rake compile
+bundle exec rake test
 ```
 
 Expected: test passes. The Foundation Models on-device model returns some non-empty string for the simple greeting prompt.
@@ -369,7 +382,7 @@ end
 - [ ] **Step 5.2: Run test, expect failure**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_session.rb
+bundle exec rake test TEST=test/test_session.rb
 ```
 
 Expected: failure on `NameError: uninitialized constant AppleFoundationModel::Session`.
@@ -639,9 +652,9 @@ end
 - [ ] **Step 6.6: Compile and run all tests**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber
-PATH=/usr/bin:/bin bundle exec rake compile
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake clobber
+bundle exec rake compile
+bundle exec rake test
 ```
 
 Expected: all tests in `test_foundation_model_mac.rb` and `test_session.rb` pass.
@@ -686,7 +699,7 @@ end
 - [ ] **Step 7.2: Run test, expect failure**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake test TEST=test/test_session.rb
+bundle exec rake test TEST=test/test_session.rb
 ```
 
 Expected: failure with `NoMethodError: undefined method 'stream_response'`.
@@ -914,9 +927,9 @@ Inside `class Session`, add:
 - [ ] **Step 8.5: Compile and run all tests**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec rake clobber
-PATH=/usr/bin:/bin bundle exec rake compile
-PATH=/usr/bin:/bin bundle exec rake test
+bundle exec rake clobber
+bundle exec rake compile
+bundle exec rake test
 ```
 
 Expected: all tests pass including `test_stream_response_yields_chunks`. If the producer/consumer hand-off in Step 8.1 misbehaves at this point, fall back to the "accumulator" approach noted in Step 8.1's implementation note before debugging the dual-semaphore approach.
@@ -1037,8 +1050,8 @@ MIT
 - [ ] **Step 9.4: Verify both examples run**
 
 ```bash
-PATH=/usr/bin:/bin bundle exec ruby examples/basic_generation.rb
-PATH=/usr/bin:/bin bundle exec ruby examples/streaming.rb
+bundle exec ruby examples/basic_generation.rb
+bundle exec ruby examples/streaming.rb
 ```
 
 Expected: both produce non-empty output to stdout.
