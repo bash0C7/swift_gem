@@ -47,6 +47,12 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       # tests
       assert_file_exist(File.join(gem_dir, "test/test_helper.rb"))
 
+      # swiftly toolchain pin: cd alone honors .swift-version via swiftly's shim
+      swift_version_path = File.join(gem_dir, ".swift-version")
+      assert_file_exist(swift_version_path)
+      assert_match(/\A6\.\d+(?:\.\d+)?\s*\z/, File.read(swift_version_path),
+                   ".swift-version should pin a Swift 6.x toolchain (SE-0495 requires 6.3+)")
+
       # naming transforms inside generated files
       assert_match(/module FooMac/, File.read(File.join(gem_dir, "lib/foo_mac.rb")))
       assert_match(/spec\.name\s*=\s*["']rb-foo-mac["']/,
