@@ -28,8 +28,6 @@ module SwiftGem
       ["test_sample.rb.erb",     "test/%{module_path}/sample_test.rb"]
     ].freeze
 
-    EXECUTABLE_TARGETS = [].freeze
-
     attr_reader :gem_name
 
     def initialize(gem_name)
@@ -65,10 +63,6 @@ module SwiftGem
         else
           FileUtils.cp(src_path, dest_path)
         end
-      end
-
-      EXECUTABLE_TARGETS.each do |path_template|
-        File.chmod(0o755, File.join(dest_dir, format(path_template, vars)))
       end
     end
 
