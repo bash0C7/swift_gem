@@ -10,6 +10,8 @@ Helpers for building Ruby native extensions whose implementation lives in Swift 
 
 The recommended toolchain installer is [swiftly](https://www.swift.org/install/macos/). Xcode is *not* required — `brew install swiftly && swiftly install 6.3 && swiftly use 6.3` is enough. Coexists with any Xcode-bundled Swift via PATH.
 
+swiftly installs `swift` as a shim that honors a `.swift-version` file in the current working directory (the same per-project pin model as `rbenv`'s `.ruby-version`). The generator emits `.swift-version` into every scaffolded gem, so `cd <gem>` alone selects the right toolchain — no shell hooks, no `direnv`, no manual `swiftly use`.
+
 `bundle exec rake check` verifies the active toolchain is 6.3+; it runs automatically before `rake test`.
 
 ## Installation
@@ -92,7 +94,7 @@ That's the full loop. To grow the gem, add more `@c` functions in `Bridge.swift`
 
 ## Generated files
 
-`bundle exec rake new <gem-name> [dest_dir]` writes 17 files. Edit the rows marked **EDIT** to flesh out your gem; the rest is infrastructure.
+`bundle exec rake new <gem-name> [dest_dir]` writes 18 files. Edit the rows marked **EDIT** to flesh out your gem; the rest is infrastructure.
 
 | Path | Kind | Role |
 |---|---|---|
@@ -103,6 +105,7 @@ That's the full loop. To grow the gem, add more `@c` functions in `Bridge.swift`
 | `LICENSE.txt` | static | MIT |
 | `.gitignore` | static | Build artifacts, `Gemfile.lock`, vendor/ |
 | `.bundle/config` | static | Pins `BUNDLE_PATH` to `vendor/bundle` |
+| `.swift-version` | static | swiftly per-project toolchain pin (currently `6.3.1`); honored by the `swift` shim on `cd` |
 | `lib/<module_path>.rb` | ERB | Module entry: requires version + the compiled `.bundle`; declares `module <ModuleName>; class Error < StandardError; end; end` |
 | `lib/<module_path>/version.rb` | ERB | `VERSION = "0.1.0"` |
 | `ext/<module_path>/Package.swift` | ERB | SPM `.dynamic` library targeting macOS 12+ |
