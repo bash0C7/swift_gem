@@ -87,10 +87,7 @@ module SwiftGem
 
     class Context
       def initialize(**vars)
-        vars.each do |key, value|
-          instance_variable_set("@#{key}", value)
-          define_singleton_method(key) { value }
-        end
+        vars.each { |key, value| define_singleton_method(key) { value } }
       end
 
       def __binding__
