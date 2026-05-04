@@ -2,6 +2,7 @@
 
 require "erb"
 require "fileutils"
+require_relative "swift_version_check"
 
 module SwiftGem
   class Generator
@@ -14,7 +15,7 @@ module SwiftGem
       ["README.md.erb",          "README.md"],
       ["gitignore",              ".gitignore"],
       ["bundle_config",          ".bundle/config"],
-      ["swift_version",          ".swift-version"],
+      ["swift_version.erb",      ".swift-version"],
       ["LICENSE.txt",            "LICENSE.txt"],
       ["lib_main.rb.erb",        "lib/%{module_path}.rb"],
       ["lib_version.rb.erb",     "lib/%{module_path}/version.rb"],
@@ -74,7 +75,8 @@ module SwiftGem
         module_name: module_name,
         module_path: module_path,
         exe_name: exe_name,
-        c_symbol_prefix: "#{module_path}_"
+        c_symbol_prefix: "#{module_path}_",
+        swift_minimum: SwiftVersionCheck::MINIMUM.to_s
       }
     end
 

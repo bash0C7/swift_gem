@@ -5,7 +5,11 @@
       "Bash(PATH=/usr/bin:/bin bundle exec rake check)",
       "Bash(git push *)",
       "mcp__esa__esa_create_post",
-      "WebFetch(domain:docs.ruby-lang.org)"
+      "WebFetch(domain:docs.ruby-lang.org)",
+      "Bash(bundle --version)",
+      "WebFetch(domain:dev.classmethod.jp)",
+      "Read(//Users/bash/dev/src/github.com/bash0C7/rb-vision-ocrmac/**)",
+      "Read(//Users/bash/dev/src/github.com/bash0C7/rb-vision-ocrmac/.claude/**)"
     ]
   }
 }
