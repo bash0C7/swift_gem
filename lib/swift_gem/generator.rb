@@ -14,6 +14,7 @@ module SwiftGem
       ["README.md.erb",          "README.md"],
       ["gitignore",              ".gitignore"],
       ["bundle_config",          ".bundle/config"],
+      ["swift_version",          ".swift-version"],
       ["LICENSE.txt",            "LICENSE.txt"],
       ["lib_main.rb.erb",        "lib/%{module_path}.rb"],
       ["lib_version.rb.erb",     "lib/%{module_path}/version.rb"],
