@@ -59,6 +59,7 @@ module SwiftGem
         FileUtils.mkdir_p(File.dirname(dest_path))
 
         src_path = File.join(TEMPLATE_DIR, src)
+        # Templates without .erb are copied verbatim; .erb templates render with ERB.
         if src.end_with?(".erb")
           File.write(dest_path, render(src_path, vars))
         else
