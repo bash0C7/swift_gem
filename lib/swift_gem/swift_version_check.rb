@@ -16,12 +16,12 @@ module SwiftGem
       if version.nil?
         raise IncompatibleSwiftVersion,
               "swift_gem: cannot parse swift toolchain version from: #{output.inspect}. " \
-              "Install Swift 6.3+ via swiftly: 'brew install swiftly && swiftly install 6.3 && swiftly use 6.3'."
+              "Install Swift #{MINIMUM}+ via swiftly: 'brew install swiftly && swiftly install #{MINIMUM} && swiftly use #{MINIMUM}'."
       end
       if version < MINIMUM
         raise IncompatibleSwiftVersion,
               "swift_gem: requires Swift #{MINIMUM}+ (found #{version}). " \
-              "Upgrade via swiftly: 'swiftly install 6.3 && swiftly use 6.3'."
+              "Upgrade via swiftly: 'swiftly install #{MINIMUM} && swiftly use #{MINIMUM}'."
       end
       version
     end
