@@ -52,6 +52,12 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
       assert_file_exist(swift_version_path)
       assert_match(/\A6\.\d+(?:\.\d+)?\s*\z/, File.read(swift_version_path),
                    ".swift-version should pin a Swift 6.x toolchain (SE-0495 requires 6.3+)")
+      # The pin must derive from SwiftVersionCheck::MINIMUM so the version-check
+      # error path and the generated scaffold cannot drift apart.
+      require "swift_gem/swift_version_check"
+      assert_equal SwiftGem::SwiftVersionCheck::MINIMUM.to_s,
+                   File.read(swift_version_path).strip,
+                   ".swift-version must equal SwiftVersionCheck::MINIMUM"
 
       # naming transforms inside generated files
       assert_match(/module FooMac/, File.read(File.join(gem_dir, "lib/foo_mac.rb")))
