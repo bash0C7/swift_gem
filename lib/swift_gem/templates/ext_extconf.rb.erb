@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
-require "swift_gem/mkmf"
+# swift_mkmf.rb (and swift_version_check.rb) are vendored into this ext dir by
+# the swift_gem generator. We require it relatively rather than `require
+# "swift_gem/mkmf"`, because rubygems' extension builder runs a plain
+# `ruby extconf.rb` outside bundler's load-path setup, where a git:/path:
+# swift_gem is invisible. Vendoring keeps the build self-contained.
+require_relative "swift_mkmf"
 
 SwiftGem::Mkmf.create_swift_makefile(
   "<%= module_path %>/<%= module_path %>",

@@ -91,6 +91,42 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  test "vendors build-time helpers into ext so the extension builds without swift_gem on the load path" do
+    Dir.mktmpdir do |tmp|
+      gem_dir = File.join(tmp, "rb-foo-mac")
+      SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
+
+      mkmf_path = File.join(gem_dir, "ext/foo_mac/swift_mkmf.rb")
+      vcheck_path = File.join(gem_dir, "ext/foo_mac/swift_version_check.rb")
+      assert_file_exist(mkmf_path)
+      assert_file_exist(vcheck_path)
+
+      # rubygems' extension builder spawns a plain `ruby extconf.rb` outside
+      # bundler's load-path setup, so a git:/path: swift_gem is invisible there.
+      # The generated extconf must load the vendored helper relatively and never
+      # require the swift_gem gem at build time.
+      extconf = File.read(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
+      assert_match(/require_relative\s+["']swift_mkmf["']/, extconf)
+      assert_not_match(/require\s+["']swift_gem/, extconf,
+                       "extconf must not require the swift_gem gem at build time")
+
+      # The vendored mkmf must be self-contained: its cross-file require is
+      # localized, so it pulls nothing from the (possibly absent) swift_gem gem.
+      mkmf = File.read(mkmf_path)
+      assert_match(/def self\.create_swift_makefile/, mkmf)
+      assert_match(/require_relative\s+["']swift_version_check["']/, mkmf)
+      assert_not_match(%r{require\s+["']swift_gem/}, mkmf,
+                       "vendored mkmf must use require_relative, not require \"swift_gem/...\"")
+
+      # The generated gem must be self-contained; swift_gem is a scaffold tool,
+      # not a runtime/build dependency (and is unpublished, so a declared
+      # dependency would also break plain `gem install`).
+      gemspec = File.read(File.join(gem_dir, "rb-foo-mac.gemspec"))
+      assert_not_match(/add_dependency\s+["']swift_gem["']/, gemspec,
+                       "generated gem must not depend on the swift_gem gem")
+    end
+  end
+
   test "module_name strips rb- prefix and CamelCases the rest" do
     assert_equal "FooMac",         SwiftGem::Generator.new("rb-foo-mac").module_name
     assert_equal "VisionOcrmac",   SwiftGem::Generator.new("rb-vision-ocrmac").module_name

@@ -29,6 +29,17 @@ module SwiftGem
       ["test_sample.rb.erb",     "test/%{module_path}/sample_test.rb"]
     ].freeze
 
+    # Build-time helpers vendored into each generated gem's ext dir, sourced
+    # from this gem's own lib/ (single source of truth). rubygems' extension
+    # builder spawns a plain `ruby extconf.rb` outside bundler's load-path
+    # setup, where a git:/path: swift_gem is invisible — so the generated gem
+    # must carry its build helper in-tree instead of `require`-ing swift_gem.
+    # Maps a lib/swift_gem/<source> to its vendored ext destination.
+    VENDORED_BUILD_HELPERS = [
+      ["swift_version_check.rb", "ext/%{module_path}/swift_version_check.rb"],
+      ["mkmf.rb",                "ext/%{module_path}/swift_mkmf.rb"]
+    ].freeze
+
     attr_reader :gem_name
 
     def initialize(gem_name)
@@ -66,9 +77,29 @@ module SwiftGem
           FileUtils.cp(src_path, dest_path)
         end
       end
+
+      VENDORED_BUILD_HELPERS.each do |src, dest_template|
+        dest_path = File.join(dest_dir, format(dest_template, vars))
+        FileUtils.mkdir_p(File.dirname(dest_path))
+        File.write(dest_path, vendored_helper_source(src))
+      end
     end
 
     private
+
+    # Reads a build helper from this gem's lib/ and localizes its cross-file
+    # require so the vendored copy is self-contained (depends on nothing from
+    # the swift_gem gem at extension-build time).
+    def vendored_helper_source(filename)
+      source = File.read(File.expand_path(filename, __dir__))
+      source
+        .sub(/\A# frozen_string_literal: true\n/,
+             "# frozen_string_literal: true\n#\n" \
+             "# Vendored from the swift_gem scaffold; do not edit by hand.\n" \
+             "# The extension must build without swift_gem on the load path.\n")
+        .gsub('require "swift_gem/swift_version_check"',
+              'require_relative "swift_version_check"')
+    end
 
     def template_vars
       {
