@@ -127,6 +127,26 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  test "the emitted .gitignore does not silently drop the tracked .bundle/config" do
+    Dir.mktmpdir do |tmp|
+      gem_dir = File.join(tmp, "rb-foo-mac")
+      SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
+
+      Dir.chdir(gem_dir) do
+        system("git", "init", "-q", "-b", "main", out: File::NULL, err: File::NULL)
+        system("git", "add", "-A", out: File::NULL, err: File::NULL)
+        tracked = `git ls-files`.split("\n")
+        assert_include(
+          tracked, ".bundle/config",
+          ".bundle/config is generated as a file meant to be committed (see " \
+          "CLAUDE.md's 'Scaffold parity' and the README's Generated files table), " \
+          "but a blanket '.bundle/' line in the emitted .gitignore excludes it " \
+          "from `git add -A` in every gem this generator scaffolds"
+        )
+      end
+    end
+  end
+
   test "module_name strips rb- prefix and CamelCases the rest" do
     assert_equal "FooMac",         SwiftGem::Generator.new("rb-foo-mac").module_name
     assert_equal "VisionOcrmac",   SwiftGem::Generator.new("rb-vision-ocrmac").module_name
