@@ -4,7 +4,8 @@
 /doc/
 /pkg/
 /spec/reports/
-.bundle/
+.bundle/*
+!.bundle/config
 vendor/bundle/
 Gemfile.lock
 *.gem
