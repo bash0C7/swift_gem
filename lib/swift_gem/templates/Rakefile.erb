@@ -21,6 +21,11 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
+desc "Validate the RBS signatures"
+task :rbs do
+  sh "rbs", "-I", "sig", "validate"
+end
+
 desc "Start an IRB console with <%= module_path %> loaded"
 task console: :compile do
   require "irb"
@@ -30,5 +35,5 @@ task console: :compile do
   IRB.start
 end
 
-task test: :compile
+task test: %i[rbs compile]
 task default: :test

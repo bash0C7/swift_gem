@@ -85,8 +85,8 @@ To add more functions, declare them in `HelloSwiftBridge.swift` with `@c(<name>)
 | Path | Kind | Role |
 |---|---|---|
 | `<gem-name>.gemspec` | ERB | Gemspec with `extensions = ["ext/<module_path>/extconf.rb"]`, `required_ruby_version >= 4.0`, MIT license. **EDIT** summary and description before publishing |
-| `Gemfile` | ERB | `gemspec` plus `rake`, `rake-compiler`, `test-unit`, `irb` |
-| `Rakefile` | ERB | `Rake::ExtensionTask`, `task :swift`, `compile: :swift`, `test: :compile`, `console: :compile` |
+| `Gemfile` | ERB | `gemspec` plus `rake`, `rake-compiler`, `rbs`, `test-unit`, `irb` |
+| `Rakefile` | ERB | `Rake::ExtensionTask`, `task :swift`, `task :rbs`, `compile: :swift`, `test: %i[rbs compile]`, `console: :compile` |
 | `README.md` | ERB | Scaffold. **EDIT** to describe your gem |
 | `LICENSE.txt` | static | MIT |
 | `.gitignore` | static | Build artifacts, `Gemfile.lock`, `vendor/bundle/` |

@@ -85,6 +85,15 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  test "generated gem validates its RBS signatures before testing" do
+    generate do |gem_dir|
+      assert_match(/gem "rbs"/, read(gem_dir, "Gemfile"))
+      rakefile = read(gem_dir, "Rakefile")
+      assert_include(rakefile, 'sh "rbs", "-I", "sig", "validate"')
+      assert_include(rakefile, "task test: %i[rbs compile]")
+    end
+  end
+
   test "ships an RBS signature for the generated module" do
     generate do |gem_dir|
       sig = read(gem_dir, "sig/foo_mac.rbs")
