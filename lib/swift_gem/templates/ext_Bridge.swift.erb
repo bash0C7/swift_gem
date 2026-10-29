@@ -1,13 +1,23 @@
 import Foundation
 
-@c
-public func <%= c_symbol_prefix %>perform(_ input: UnsafePointer<CChar>) -> UnsafeMutablePointer<CChar> {
-    let s = String(cString: input)
-    let result = <%= module_path %>_perform(s)
+/// Calls ``perform(_:)`` from C as `<%= c_symbol_prefix %>perform`.
+///
+/// The returned buffer is allocated with `strdup`. Release it with ``cFree(_:)``.
+///
+/// - Parameter input: A NUL-terminated UTF-8 string.
+/// - Returns: A newly allocated NUL-terminated UTF-8 string owned by the caller.
+@c(<%= c_symbol_prefix %>perform)
+public func cPerform(_ input: UnsafePointer<CChar>) -> UnsafeMutablePointer<CChar> {
+    let result = perform(String(cString: input))
     return strdup(result)!
 }
 
-@c
-public func <%= c_symbol_prefix %>free(_ ptr: UnsafeMutablePointer<CChar>?) {
+/// Releases a buffer returned by ``cPerform(_:)``, exposed to C as `<%= c_symbol_prefix %>free`.
+///
+/// The caller owns every buffer ``cPerform(_:)`` returns and must pass it to this function exactly once.
+///
+/// - Parameter ptr: The buffer to release, or `nil`.
+@c(<%= c_symbol_prefix %>free)
+public func cFree(_ ptr: UnsafeMutablePointer<CChar>?) {
     free(ptr)
 }

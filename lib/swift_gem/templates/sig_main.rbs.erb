@@ -1,0 +1,11 @@
+module <%= module_name %>
+  # The gem version.
+  VERSION: String
+
+  # Base class for errors raised by this gem.
+  class Error < StandardError
+  end
+
+  # Returns the result of the Swift implementation for +input+.
+  def self.perform: (String input) -> String
+end

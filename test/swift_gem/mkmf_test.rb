@@ -2,65 +2,54 @@
 
 require "test_helper"
 require "tmpdir"
-require "fileutils"
+require "shellwords"
 require "swift_gem/mkmf"
-require "swift_gem/swift_version_check"
 
 class SwiftGemMkmfTest < Test::Unit::TestCase
-  StubBuilder = lambda do |_package, source_dir|
-    File.expand_path(".build/release", source_dir)
-  end
-
-  test "create_swift_makefile passes source_dir to builder and embeds rpath ldflags" do
+  def makefile_for(lib_dir:, header_dir:)
     received_args = nil
     builder = lambda do |package, source_dir|
       received_args = [package, source_dir]
-      File.expand_path(".build/release", source_dir)
+      [lib_dir, header_dir]
     end
 
+    content = nil
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
         SwiftGem::Mkmf.create_swift_makefile(
           "toy_gem/toy_gem",
           package: "Toy",
           source_dir: "/some/swift/pkg/dir",
-          builder: builder,
-          swift_version_probe: -> { "Apple Swift version 6.3.0\n" }
+          builder: builder
         )
-
-        assert_equal(["Toy", "/some/swift/pkg/dir"], received_args)
         assert(File.exist?("Makefile"), "Makefile should be generated")
         content = File.read("Makefile")
-        assert_match(%r{^SHELL = /bin/sh$}, content)
-        assert_match(%r{-Wl,-rpath,/some/swift/pkg/dir/\.build/release}, content)
-        assert_match(%r{-L/some/swift/pkg/dir/\.build/release}, content)
-        assert_match(/-lToy/, content)
-        assert_match(%r{-I/some/swift/pkg/dir(?:[ "]|$)}, content,
-                     "CFLAGS should include the source_dir so the C ext can #include the auto-generated <Package>-Swift.h that swift build emits next to Package.swift (SPM cleans .build/, so we drop the header in source_dir)")
       end
     end
+    [content, received_args]
   end
 
-  test "create_swift_makefile rejects toolchain older than 6.3 before invoking builder" do
-    builder_called = false
-    builder = lambda do |_package, source_dir|
-      builder_called = true
-      File.expand_path(".build/release", source_dir)
-    end
+  test "create_swift_makefile passes package and source_dir to builder and embeds its paths" do
+    content, received_args = makefile_for(
+      lib_dir: "/some/lib/release",
+      header_dir: "/some/header/modules"
+    )
 
-    Dir.mktmpdir do |dir|
-      Dir.chdir(dir) do
-        assert_raise(SwiftGem::SwiftVersionCheck::IncompatibleSwiftVersion) do
-          SwiftGem::Mkmf.create_swift_makefile(
-            "toy_gem/toy_gem",
-            package: "Toy",
-            source_dir: "/some/swift/pkg/dir",
-            builder: builder,
-            swift_version_probe: -> { "Apple Swift version 6.2.4\n" }
-          )
-        end
-        assert_false(builder_called, "builder should not run when Swift toolchain is too old")
-      end
-    end
+    assert_equal(["Toy", "/some/swift/pkg/dir"], received_args)
+    assert_match(%r{^SHELL = /bin/sh$}, content)
+    assert_include(content, "-I/some/header/modules")
+    assert_include(content, "-Wl,-rpath,/some/lib/release")
+    assert_include(content, "-L/some/lib/release")
+    assert_include(content, "-lToy")
+  end
+
+  test "create_swift_makefile escapes paths containing spaces" do
+    lib_dir = "/some lib/release"
+    header_dir = "/some header/modules"
+    content, = makefile_for(lib_dir: lib_dir, header_dir: header_dir)
+
+    assert_include(content, Shellwords.escape("-I#{header_dir}"))
+    assert_include(content, Shellwords.escape("-Wl,-rpath,#{lib_dir}"))
+    assert_include(content, Shellwords.escape("-L#{lib_dir}"))
   end
 end

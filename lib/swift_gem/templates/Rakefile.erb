@@ -14,6 +14,11 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList["test/**/*_test.rb"]
 end
 
+desc "Build the Swift package"
+task :swift do
+  sh "xcrun", "swift", "build", "-c", "release", "--package-path", "ext/<%= module_path %>"
+end
+
 desc "Start an IRB console with <%= module_path %> loaded"
 task console: :compile do
   require "irb"
@@ -23,5 +28,6 @@ task console: :compile do
   IRB.start
 end
 
+task compile: :swift
 task test: :compile
 task default: :test
