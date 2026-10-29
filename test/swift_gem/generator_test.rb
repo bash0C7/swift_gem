@@ -78,6 +78,13 @@ class SwiftGemGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  test "generated Rakefile makes compile depend on swift before the extension task is declared" do
+    generate do |gem_dir|
+      rakefile = read(gem_dir, "Rakefile")
+      assert_operator(rakefile.index("task compile: :swift"), :<, rakefile.index("Rake::ExtensionTask.new"))
+    end
+  end
+
   test "ships an RBS signature for the generated module" do
     generate do |gem_dir|
       sig = read(gem_dir, "sig/foo_mac.rbs")

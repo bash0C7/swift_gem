@@ -52,4 +52,10 @@ class SwiftGemMkmfTest < Test::Unit::TestCase
     assert_include(content, Shellwords.escape("-Wl,-rpath,#{lib_dir}"))
     assert_include(content, Shellwords.escape("-L#{lib_dir}"))
   end
+
+  test "create_swift_makefile doubles dollar signs so make passes them through to the shell" do
+    content, = makefile_for(lib_dir: "/some/lib", header_dir: "/dir$HOME/modules")
+
+    assert_include(content, '-I/dir\$$HOME/modules')
+  end
 end

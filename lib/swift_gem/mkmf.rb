@@ -18,11 +18,16 @@ module SwiftGem
 
     def self.create_swift_makefile(target, package:, source_dir:, builder: DEFAULT_BUILDER)
       lib_dir, header_dir = builder.call(package, source_dir)
-      $CFLAGS << " #{Shellwords.escape("-I#{header_dir}")}"
-      $LDFLAGS << " #{Shellwords.escape("-Wl,-rpath,#{lib_dir}")}" \
-                  " #{Shellwords.escape("-L#{lib_dir}")}" \
-                  " #{Shellwords.escape("-l#{package}")}"
+      $CFLAGS << " #{escape_flag("-I#{header_dir}")}"
+      $LDFLAGS << " #{escape_flag("-Wl,-rpath,#{lib_dir}")}" \
+                  " #{escape_flag("-L#{lib_dir}")}" \
+                  " #{escape_flag("-l#{package}")}"
       create_makefile(target)
     end
+
+    def self.escape_flag(flag)
+      Shellwords.escape(flag).gsub("$", "$$")
+    end
+    private_class_method :escape_flag
   end
 end
