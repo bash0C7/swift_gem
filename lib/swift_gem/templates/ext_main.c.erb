@@ -2,11 +2,7 @@
 #include "<%= module_name %>-Swift.h"
 
 static VALUE rb_<%= module_path %>_perform(VALUE self, VALUE input) {
-    const char *c_input = StringValueCStr(input);
-    char *result = <%= c_symbol_prefix %>perform(c_input);
-    if (result == NULL) {
-        return rb_utf8_str_new_cstr("");
-    }
+    char *result = <%= c_symbol_prefix %>perform(StringValueCStr(input));
     VALUE rb_result = rb_utf8_str_new_cstr(result);
     <%= c_symbol_prefix %>free(result);
     return rb_result;

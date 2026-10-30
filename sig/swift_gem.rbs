@@ -1,4 +1,49 @@
 module SwiftGem
+  # The gem version.
   VERSION: String
-  # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+  # mkmf integration that builds a Swift package and links it into a C extension.
+  module Mkmf
+    # Builds the Swift package named +package+ in +source_dir+.
+    #
+    # Returns the library directory and the directory containing the generated `<Module>-Swift.h`.
+    type builder = ^(String package, String source_dir) -> [ String, String ]
+
+    # Runs `xcrun swift build -c release` and returns the paths under `<source_dir>/.build`.
+    #
+    # Raises when the build fails.
+    DEFAULT_BUILDER: builder
+
+    # Builds the Swift package, adds its include and link flags to mkmf, and writes the Makefile for +target+.
+    #
+    # +package+ is the Swift library name and +source_dir+ is the directory holding `Package.swift`.
+    def self.create_swift_makefile: (String target, package: String, source_dir: String, ?builder: builder) -> void
+  end
+
+  # Generates a Swift-backed native extension gem skeleton.
+  class Generator
+    # Directory holding the ERB and static templates.
+    TEMPLATE_DIR: String
+
+    # Pairs of template file name and destination path format.
+    TEMPLATES: Array[[ String, String ]]
+
+    # Pairs of file name under `lib/swift_gem` and destination path format of the vendored copy.
+    VENDORED_BUILD_HELPERS: Array[[ String, String ]]
+
+    # The gem name given to the generator.
+    attr_reader gem_name: String
+
+    # Creates a generator for +gem_name+.
+    def initialize: (String gem_name) -> void
+
+    # The top-level Ruby module name derived from the gem name.
+    def module_name: () -> String
+
+    # The snake_case path name derived from the gem name.
+    def module_path: () -> String
+
+    # Writes the skeleton into +dest_dir+.
+    def call: (dest_dir: String) -> void
+  end
 end

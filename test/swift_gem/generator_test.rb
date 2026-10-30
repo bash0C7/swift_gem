@@ -2,169 +2,158 @@
 
 require "test_helper"
 require "tmpdir"
-require "fileutils"
 require "swift_gem/generator"
 
 class SwiftGemGeneratorTest < Test::Unit::TestCase
-  def assert_file_exist(path)
-    assert(File.exist?(path), "expected file to exist: #{path}")
-  end
+  RUBY_COMMENT = /^\s*#(?! frozen_string_literal: true$)/
+  SLASH_COMMENT = %r{^\s*//(?!/|\s*swift-tools-version:)}
 
-  test "generates a complete swift gem skeleton from rb-foo-mac" do
+  def generate(&block)
     Dir.mktmpdir do |tmp|
       gem_dir = File.join(tmp, "rb-foo-mac")
       SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
+      block.call(gem_dir)
+    end
+  end
 
-      # core gem files
-      assert_file_exist(File.join(gem_dir, "rb-foo-mac.gemspec"))
-      assert_file_exist(File.join(gem_dir, "Gemfile"))
-      assert_file_exist(File.join(gem_dir, "Rakefile"))
-      assert_file_exist(File.join(gem_dir, "README.md"))
-      assert_file_exist(File.join(gem_dir, ".gitignore"))
-      assert_file_exist(File.join(gem_dir, "LICENSE.txt"))
-      assert_file_exist(File.join(gem_dir, ".bundle/config"))
-      assert_match(/BUNDLE_PATH:\s*"vendor\/bundle"/,
-                   File.read(File.join(gem_dir, ".bundle/config")))
+  def read(gem_dir, path)
+    File.read(File.join(gem_dir, path))
+  end
 
-      # lib
-      assert_file_exist(File.join(gem_dir, "lib/foo_mac.rb"))
-      assert_file_exist(File.join(gem_dir, "lib/foo_mac/version.rb"))
+  test "generates the expected file list from rb-foo-mac" do
+    generate do |gem_dir|
+      expected = %w[
+        rb-foo-mac.gemspec
+        Gemfile
+        Rakefile
+        README.md
+        .gitignore
+        .bundle/config
+        LICENSE.txt
+        lib/foo_mac.rb
+        lib/foo_mac/version.rb
+        sig/foo_mac.rbs
+        ext/foo_mac/Package.swift
+        ext/foo_mac/Sources/FooMac/FooMac.swift
+        ext/foo_mac/Sources/FooMac/FooMacBridge.swift
+        ext/foo_mac/foo_mac.c
+        ext/foo_mac/extconf.rb
+        ext/foo_mac/swift_mkmf.rb
+        examples/foo_mac.swift
+        test/test_helper.rb
+        test/foo_mac/sample_test.rb
+      ]
+      actual = Dir.glob("**/*", File::FNM_DOTMATCH, base: gem_dir).select { |f| File.file?(File.join(gem_dir, f)) }
+      assert_equal(expected.sort, actual.sort)
+      assert_match(/BUNDLE_PATH:\s*"vendor\/bundle"/, read(gem_dir, ".bundle/config"))
+    end
+  end
 
-      # ext
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Package.swift"))
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMac.swift"))
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
-      assert_false(File.exist?(File.join(gem_dir, "ext/foo_mac/foo_mac.h")),
-                   "hand-written .h should be removed; the C ext now includes the SPM-generated <Package>-Swift.h")
-      assert_file_exist(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
+  test "fills in naming transforms and the Swift 6.4 / macOS 27 manifest" do
+    generate do |gem_dir|
+      assert_match(/module FooMac/, read(gem_dir, "lib/foo_mac.rb"))
+      assert_match(/spec\.name\s*=\s*["']rb-foo-mac["']/, read(gem_dir, "rb-foo-mac.gemspec"))
+      assert_match(/required_ruby_version\s*=\s*">= 4\.0"/, read(gem_dir, "rb-foo-mac.gemspec"))
 
-      # pure Swift sample (no Ruby CLI by default; see CLAUDE.md)
-      assert_file_exist(File.join(gem_dir, "examples/foo_mac.swift"))
-      assert_false(File.exist?(File.join(gem_dir, "exe")),
-                   "generator should not scaffold a Ruby CLI under exe/")
+      package = read(gem_dir, "ext/foo_mac/Package.swift")
+      assert_match(/^\/\/ swift-tools-version: 6\.4$/, package)
+      assert_include(package, "platforms: [.macOS(.v27)]")
 
-      # tests
-      assert_file_exist(File.join(gem_dir, "test/test_helper.rb"))
-
-      # swiftly toolchain pin: cd alone honors .swift-version via swiftly's shim
-      swift_version_path = File.join(gem_dir, ".swift-version")
-      assert_file_exist(swift_version_path)
-      assert_match(/\A6\.\d+(?:\.\d+)?\s*\z/, File.read(swift_version_path),
-                   ".swift-version should pin a Swift 6.x toolchain (SE-0495 requires 6.3+)")
-      # The pin must derive from SwiftVersionCheck::MINIMUM so the version-check
-      # error path and the generated scaffold cannot drift apart.
-      require "swift_gem/swift_version_check"
-      assert_equal SwiftGem::SwiftVersionCheck::MINIMUM.to_s,
-                   File.read(swift_version_path).strip,
-                   ".swift-version must equal SwiftVersionCheck::MINIMUM"
-
-      # naming transforms inside generated files
-      assert_match(/module FooMac/, File.read(File.join(gem_dir, "lib/foo_mac.rb")))
-      assert_match(/spec\.name\s*=\s*["']rb-foo-mac["']/,
-                   File.read(File.join(gem_dir, "rb-foo-mac.gemspec")))
-
-      extconf = File.read(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
+      extconf = read(gem_dir, "ext/foo_mac/extconf.rb")
       assert_match(/SwiftGem::Mkmf\.create_swift_makefile/, extconf)
       assert_match(/package:\s*["']FooMac["']/, extconf)
       assert_match(/source_dir:\s*__dir__/, extconf)
 
-      bridge = File.read(File.join(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift"))
-      assert_match(/^@c\npublic func foo_mac_perform/, bridge,
-                   "Bridge should use the SE-0495 @c attribute (bare form; Swift function name doubles as the C symbol)")
-      assert_match(/^@c\npublic func foo_mac_free/, bridge,
-                   "Bridge should use the SE-0495 @c attribute")
-      assert_not_match(/@_cdecl/, bridge,
-                       "Bridge should not use the experimental @_cdecl after Swift 6.3 migration")
-      assert_not_match(/@c\([^)]*"/, bridge,
-                       "@c does not accept a string literal; pass a bare C identifier or omit the argument")
-
-      package = File.read(File.join(gem_dir, "ext/foo_mac/Package.swift"))
-      assert_match(/swift-tools-version:\s*6\.3/, package,
-                   "Package.swift should declare swift-tools-version 6.3 (SE-0495 requires Swift 6.3)")
-
-      ext_c = File.read(File.join(gem_dir, "ext/foo_mac/foo_mac.c"))
-      assert_match(/#include\s+"FooMac-Swift\.h"/, ext_c,
-                   "C ext should include the auto-generated <Package>-Swift.h emitted by 'swift build -emit-clang-header-path'")
-      assert_not_match(/#include\s+"foo_mac\.h"/, ext_c,
-                       "C ext should not reference the removed hand-written header")
+      assert_match(/#include\s+"FooMac-Swift\.h"/, read(gem_dir, "ext/foo_mac/foo_mac.c"))
     end
   end
 
-  test "vendors build-time helpers into ext so the extension builds without swift_gem on the load path" do
-    Dir.mktmpdir do |tmp|
-      gem_dir = File.join(tmp, "rb-foo-mac")
-      SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
-
-      mkmf_path = File.join(gem_dir, "ext/foo_mac/swift_mkmf.rb")
-      vcheck_path = File.join(gem_dir, "ext/foo_mac/swift_version_check.rb")
-      assert_file_exist(mkmf_path)
-      assert_file_exist(vcheck_path)
-
-      # rubygems' extension builder spawns a plain `ruby extconf.rb` outside
-      # bundler's load-path setup, so a git:/path: swift_gem is invisible there.
-      # The generated extconf must load the vendored helper relatively and never
-      # require the swift_gem gem at build time.
-      extconf = File.read(File.join(gem_dir, "ext/foo_mac/extconf.rb"))
-      assert_match(/require_relative\s+["']swift_mkmf["']/, extconf)
-      assert_not_match(/require\s+["']swift_gem/, extconf,
-                       "extconf must not require the swift_gem gem at build time")
-
-      # The vendored mkmf must be self-contained: its cross-file require is
-      # localized, so it pulls nothing from the (possibly absent) swift_gem gem.
-      mkmf = File.read(mkmf_path)
-      assert_match(/def self\.create_swift_makefile/, mkmf)
-      assert_match(/require_relative\s+["']swift_version_check["']/, mkmf)
-      assert_not_match(%r{require\s+["']swift_gem/}, mkmf,
-                       "vendored mkmf must use require_relative, not require \"swift_gem/...\"")
-
-      # The generated gem must be self-contained; swift_gem is a scaffold tool,
-      # not a runtime/build dependency (and is unpublished, so a declared
-      # dependency would also break plain `gem install`).
-      gemspec = File.read(File.join(gem_dir, "rb-foo-mac.gemspec"))
-      assert_not_match(/add_dependency\s+["']swift_gem["']/, gemspec,
-                       "generated gem must not depend on the swift_gem gem")
+  test "bridge names the C symbols with @c" do
+    generate do |gem_dir|
+      bridge = read(gem_dir, "ext/foo_mac/Sources/FooMac/FooMacBridge.swift")
+      assert_match(/^@c\(foo_mac_perform\)\npublic func cPerform/, bridge)
+      assert_match(/^@c\(foo_mac_free\)\npublic func cFree/, bridge)
+      assert_not_match(/@_cdecl/, bridge)
+      assert_match(/^func perform\(_ input: String\) -> String/, read(gem_dir, "ext/foo_mac/Sources/FooMac/FooMac.swift"))
     end
   end
 
-  test "the emitted .gitignore does not silently drop the tracked .bundle/config" do
-    Dir.mktmpdir do |tmp|
-      gem_dir = File.join(tmp, "rb-foo-mac")
-      SwiftGem::Generator.new("rb-foo-mac").call(dest_dir: gem_dir)
+  test "generated Rakefile makes compile depend on swift before the extension task is declared" do
+    generate do |gem_dir|
+      rakefile = read(gem_dir, "Rakefile")
+      assert_operator(rakefile.index("task compile: :swift"), :<, rakefile.index("Rake::ExtensionTask.new"))
+    end
+  end
 
+  test "generated gem validates its RBS signatures before testing" do
+    generate do |gem_dir|
+      assert_match(/gem "rbs"/, read(gem_dir, "Gemfile"))
+      rakefile = read(gem_dir, "Rakefile")
+      assert_include(rakefile, 'sh "rbs", "-I", "sig", "validate"')
+      assert_include(rakefile, "task test: %i[rbs compile]")
+    end
+  end
+
+  test "ships an RBS signature for the generated module" do
+    generate do |gem_dir|
+      sig = read(gem_dir, "sig/foo_mac.rbs")
+      assert_match(/^module FooMac$/, sig)
+      assert_include(sig, "VERSION: String")
+      assert_include(sig, "def self.perform: (String input) -> String")
+    end
+  end
+
+  test "vendors only swift_mkmf.rb and requires it relatively" do
+    generate do |gem_dir|
+      assert_equal(File.read(File.expand_path("../../lib/swift_gem/mkmf.rb", __dir__)),
+                   read(gem_dir, "ext/foo_mac/swift_mkmf.rb"))
+      assert_match(/require_relative\s+["']swift_mkmf["']/, read(gem_dir, "ext/foo_mac/extconf.rb"))
+      assert_not_match(/require\s+["']swift_gem/, read(gem_dir, "ext/foo_mac/extconf.rb"))
+      assert_not_match(%r{swift_gem/}, read(gem_dir, "ext/foo_mac/swift_mkmf.rb"))
+    end
+  end
+
+  test "generated gem does not depend on swift_gem" do
+    generate do |gem_dir|
+      assert_not_match(/swift_gem/, read(gem_dir, "Gemfile"))
+      assert_not_match(/add_dependency\s+["']swift_gem["']/, read(gem_dir, "rb-foo-mac.gemspec"))
+    end
+  end
+
+  test "generated Ruby, Swift and C files carry no ordinary comment lines" do
+    generate do |gem_dir|
+      ruby_files = Dir.glob("**/*.rb", base: gem_dir) + %w[Gemfile Rakefile rb-foo-mac.gemspec .gitignore]
+      ruby_files.each do |f|
+        assert_not_match(RUBY_COMMENT, read(gem_dir, f), "ordinary comment in #{f}")
+      end
+
+      (Dir.glob("**/*.swift", base: gem_dir) + Dir.glob("**/*.c", base: gem_dir)).each do |f|
+        assert_not_match(SLASH_COMMENT, read(gem_dir, f), "ordinary comment in #{f}")
+      end
+    end
+  end
+
+  test "the emitted .gitignore does not drop the tracked .bundle/config" do
+    generate do |gem_dir|
       Dir.chdir(gem_dir) do
         system("git", "init", "-q", "-b", "main", out: File::NULL, err: File::NULL)
         system("git", "add", "-A", out: File::NULL, err: File::NULL)
-        tracked = `git ls-files`.split("\n")
-        assert_include(
-          tracked, ".bundle/config",
-          ".bundle/config is generated as a file meant to be committed (see " \
-          "CLAUDE.md's 'Scaffold parity' and the README's Generated files table), " \
-          "but a blanket '.bundle/' line in the emitted .gitignore excludes it " \
-          "from `git add -A` in every gem this generator scaffolds"
-        )
+        assert_include(`git ls-files`.split("\n"), ".bundle/config")
       end
     end
   end
 
   test "module_name strips rb- prefix and CamelCases the rest" do
-    assert_equal "FooMac",         SwiftGem::Generator.new("rb-foo-mac").module_name
-    assert_equal "VisionOcrmac",   SwiftGem::Generator.new("rb-vision-ocrmac").module_name
-    assert_equal "MySwiftGem",     SwiftGem::Generator.new("my_swift_gem").module_name
+    assert_equal "FooMac",           SwiftGem::Generator.new("rb-foo-mac").module_name
+    assert_equal "VisionOcrmac",     SwiftGem::Generator.new("rb-vision-ocrmac").module_name
+    assert_equal "MySwiftGem",       SwiftGem::Generator.new("my_swift_gem").module_name
     assert_equal "SwiftPhotoTagger", SwiftGem::Generator.new("swift-photo-tagger").module_name
   end
 
   test "module_path strips rb- prefix and uses snake_case" do
-    assert_equal "foo_mac",         SwiftGem::Generator.new("rb-foo-mac").module_path
-    assert_equal "vision_ocrmac",   SwiftGem::Generator.new("rb-vision-ocrmac").module_path
-    assert_equal "my_swift_gem",    SwiftGem::Generator.new("my_swift_gem").module_path
+    assert_equal "foo_mac",            SwiftGem::Generator.new("rb-foo-mac").module_path
+    assert_equal "vision_ocrmac",      SwiftGem::Generator.new("rb-vision-ocrmac").module_path
+    assert_equal "my_swift_gem",       SwiftGem::Generator.new("my_swift_gem").module_path
     assert_equal "swift_photo_tagger", SwiftGem::Generator.new("swift-photo-tagger").module_path
-  end
-
-  test "exe_name strips rb- prefix and keeps the gem-style separator" do
-    assert_equal "foo-mac",          SwiftGem::Generator.new("rb-foo-mac").exe_name
-    assert_equal "vision-ocrmac",    SwiftGem::Generator.new("rb-vision-ocrmac").exe_name
-    assert_equal "my_swift_gem",     SwiftGem::Generator.new("my_swift_gem").exe_name
-    assert_equal "swift-photo-tagger", SwiftGem::Generator.new("swift-photo-tagger").exe_name
   end
 end

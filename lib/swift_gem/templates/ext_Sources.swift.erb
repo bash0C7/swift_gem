@@ -1,16 +1,8 @@
-import Foundation
-
-// TODO: Implement your <%= module_name %> logic here.
-//
-// Example:
-//
-// import Vision
-//
-// func performTask(input: String) -> String {
-//     // ...
-//     return ""
-// }
-
-func <%= module_path %>_perform(_ input: String) -> String {
-    return input
-}
+/// Transforms the string received from Ruby.
+///
+/// The default implementation returns `input` unchanged. Replace the body with the logic of ``<%= module_name %>``.
+/// ``cPerform(_:)`` exposes this function to C.
+///
+/// - Parameter input: The string passed from Ruby.
+/// - Returns: The string handed back to Ruby.
+func perform(_ input: String) -> String { input }

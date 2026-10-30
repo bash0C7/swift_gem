@@ -9,15 +9,12 @@
 vendor/bundle/
 Gemfile.lock
 *.gem
-
-# Built native extension artifacts
 ext/**/.build/
 ext/**/Makefile
 ext/**/*.o
 ext/**/*.bundle
 ext/**/*.bundle.dSYM/
 ext/**/mkmf.log
-ext/**/*-Swift.h
 lib/**/*.bundle
 lib/**/*.bundle.dSYM/
 /tmp/
