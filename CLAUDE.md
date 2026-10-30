@@ -79,7 +79,7 @@ Adopts the `rb-skypemac` / `rb-appscript` convention: hyphenated gem name + a si
 ## Prohibitions
 
 - No Python source (per global CLAUDE.md)
-- No code comments. Swift is documented with DocC (`///`, `- Parameter`, `- Returns`, ``` ``symbol`` ``` links); Ruby is documented with `#` comments above declarations in `sig/*.rbs`. History goes in commit messages
+- No code comments. Swift is documented with DocC (`///`, `- Parameter`, `- Returns`, ``` ``symbol`` ``` links to public symbols only); Ruby is documented with `#` comments above declarations in `sig/*.rbs`. History goes in commit messages
 - Do not git-track `Gemfile.lock` (library; the consumer's lock wins)
 - Do not reimplement rake-compiler in the framework; leave that to the consumer's Rakefile
 - Do not reinvent Bundler's path: resolution; Bundler's stock behavior is enough
