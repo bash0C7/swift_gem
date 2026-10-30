@@ -116,6 +116,12 @@ To add more functions, declare them in `HelloSwiftBridge.swift` with `@c(<name>)
 
 The header lives in `.build`, which is gitignored, so it is not part of the published `.gem`. `gem install` runs `extconf.rb`, which runs `xcrun swift build` on the installing machine.
 
+## Troubleshooting
+
+- `make` does not track the generated header. After changing an `@c` signature, delete `tmp/` so the C extension recompiles against the new header.
+- A `vendor/bundle` installed under a different Ruby patch version fails to load with `LoadError: ... linked to incompatible libruby`. Delete `vendor/bundle` and run `bundle install`.
+- `rake test` fails when the gem path contains a space, because Rake's `TestTask` does not quote the loader path. The Swift and C builds are unaffected.
+
 ## Acknowledgments
 
 - [@sue445](https://github.com/sue445)'s [go-gem-wrapper](https://github.com/ruby-go-gem/go-gem-wrapper/tree/main/_gem) (`go_gem`) and the [RubyKaigi 2025 talk](https://rubykaigi.org/2025/presentations/sue445.html). The mkmf shim and `Rake::ExtensionTask` flow are ports of `go_gem`'s pattern, with `xcrun swift build -c release --package-path` and an SPM `.dynamic` library in place of `go build -buildmode=c-shared`.
